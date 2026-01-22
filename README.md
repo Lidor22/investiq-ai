@@ -22,7 +22,7 @@ A modern, full-stack investment research platform that combines real-time market
 - **FastAPI** - Modern Python web framework
 - **SQLAlchemy** - Async ORM with SQLite
 - **yfinance** - Yahoo Finance market data
-- **Claude AI** - Anthropic's Claude for AI analysis
+- **Groq AI** - Llama 3.3 70B via Groq for fast AI analysis
 - **Pydantic** - Data validation and settings
 
 ### Frontend
@@ -38,7 +38,7 @@ A modern, full-stack investment research platform that combines real-time market
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
-- Claude API key from [Anthropic](https://console.anthropic.com/)
+- Groq API key from [Groq Console](https://console.groq.com/) (free)
 
 ### Backend Setup
 
@@ -54,7 +54,7 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your CLAUDE_API_KEY
+# Edit .env and add your GROQ_API_KEY
 
 # Run the server
 uvicorn app.main:app --reload

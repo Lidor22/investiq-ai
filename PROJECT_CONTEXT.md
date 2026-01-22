@@ -7,7 +7,7 @@ Investment research assistant with FastAPI backend and React/Vite/Tailwind front
 
 ### Phase 1-4: Core Features
 - Stock quotes via yfinance
-- AI investment briefs via Claude API
+- AI investment briefs via Groq API (Llama 3.3 70B)
 - Watchlist with SQLite persistence
 - News aggregation (fixed for new yfinance API structure)
 - Technical analysis (MA, RSI, MACD, support/resistance)
@@ -50,7 +50,7 @@ Investment research assistant with FastAPI backend and React/Vite/Tailwind front
 - `/backend/app/main.py` - FastAPI app entry
 - `/backend/app/models/database.py` - SQLAlchemy models (Watchlist, StockCache, NewsCache, Brief)
 - `/backend/app/models/schemas.py` - Pydantic schemas
-- `/backend/app/services/ai_service.py` - Claude API integration
+- `/backend/app/services/ai_service.py` - Groq API integration
 - `/backend/app/services/stock_service.py` - yfinance stock data
 - `/backend/app/services/news_service.py` - News fetching (recently fixed)
 - `/backend/app/api/routes/` - All API endpoints
@@ -65,7 +65,7 @@ Investment research assistant with FastAPI backend and React/Vite/Tailwind front
 ## Environment
 - Backend: FastAPI + SQLAlchemy async + aiosqlite
 - Frontend: React 18 + TypeScript + Vite + Tailwind + TanStack Query
-- AI: Claude API via anthropic SDK
+- AI: Groq API via groq SDK (Llama 3.3 70B)
 - Data: yfinance
 
 ## Running

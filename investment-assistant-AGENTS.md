@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-This is a personal investment research assistant web application. It aggregates stock data, news, and technical analysis, then uses Claude AI to generate investment briefs.
+This is a personal investment research assistant web application. It aggregates stock data, news, and technical analysis, then uses Groq AI (Llama 3.3 70B) to generate investment briefs.
 
 **Tech Stack:**
 - Backend: Python 3.11+, FastAPI, SQLite, yfinance
 - Frontend: React 18+, TypeScript, Vite, Tailwind CSS, TanStack Query
-- AI: Claude API (Anthropic)
+- AI: Groq API (Llama 3.3 70B)
 
 ## Repository Structure
 
@@ -128,29 +128,31 @@ function StockDetail({ ticker }: { ticker: string }) {
 }
 ```
 
-### Claude AI Integration Pattern
+### Groq AI Integration Pattern
 
 ```python
 # services/ai_service.py
-import anthropic
+from groq import Groq
 from app.config import settings
 
 class AIService:
+    MODEL = "llama-3.3-70b-versatile"
+
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=settings.CLAUDE_API_KEY)
-    
+        self.client = Groq(api_key=settings.groq_api_key)
+
     async def generate_brief(self, ticker: str, data: dict) -> InvestmentBrief:
         prompt = self._build_brief_prompt(ticker, data)
-        
-        message = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+
+        response = self.client.chat.completions.create(
+            model=self.MODEL,
             max_tokens=2000,
             messages=[{"role": "user", "content": prompt}]
         )
-        
-        result = json.loads(message.content[0].text)
+
+        result = json.loads(response.choices[0].message.content)
         return InvestmentBrief(ticker=ticker, **result)
-    
+
     def _build_brief_prompt(self, ticker: str, data: dict) -> str:
         # Load prompt template from file
         template = (Path(__file__).parent / "prompts" / "brief.txt").read_text()
@@ -193,7 +195,7 @@ async def api_error_handler(request: Request, exc: APIError):
 ### Environment Variables
 
 Required env vars (backend):
-- `CLAUDE_API_KEY` - Anthropic API key
+- `GROQ_API_KEY` - Groq API key (free at console.groq.com)
 - `NEWS_API_KEY` - NewsAPI key (optional)
 - `DATABASE_URL` - SQLite path (default: `sqlite:///./data/investiq.db`)
 
@@ -217,7 +219,7 @@ When implementing features, follow this order:
 4. Build StockQuote display component
 
 ### Phase 3: AI Integration
-1. Create AIService with Claude client
+1. Create AIService with Groq client
 2. Implement brief generation endpoint
 3. Build BriefDisplay frontend component
 4. Add loading states for generation
@@ -288,5 +290,5 @@ async def test_get_stock_quote(mock_yfinance):
 When implementing, refer to these spec sections:
 - Data models: See "Pydantic Models" section in spec
 - API endpoints: See "API Endpoints" section in spec
-- Claude prompts: See "AI Integration" section in spec
+- AI prompts: See "AI Integration" section in spec
 - Component tree: See "Frontend Components" section in spec

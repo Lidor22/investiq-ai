@@ -73,7 +73,7 @@
 │  └──────┬──────┘ └──────┬──────┘ └──────┬──────┘              │
 │         │               │               │                      │
 │  ┌──────▼──────┐ ┌──────▼──────┐ ┌──────▼──────┐              │
-│  │  yfinance   │ │  NewsAPI /  │ │   Claude    │              │
+│  │  yfinance   │ │  NewsAPI /  │ │    Groq     │              │
 │  │Alpha Vantage│ │   Finnhub   │ │    API      │              │
 │  └─────────────┘ └─────────────┘ └─────────────┘              │
 │                                                                 │
@@ -442,7 +442,7 @@ def get_news(ticker: str, company_name: str, days: int = 7) -> list:
 
 ---
 
-## AI Integration (Claude API)
+## AI Integration (Groq API)
 
 ### System Prompts
 
@@ -540,12 +540,12 @@ Respond in JSON format matching this structure:
 Be specific, cite numbers where available, and avoid generic statements.
 ```
 
-### Claude API Integration
+### Groq API Integration
 
 ```python
-import anthropic
+from groq import Groq
 
-client = anthropic.Anthropic(api_key=CLAUDE_API_KEY)
+client = Groq(api_key=GROQ_API_KEY)
 
 async def generate_brief(ticker: str, data: dict) -> InvestmentBrief:
     prompt = BRIEF_PROMPT_TEMPLATE.format(
@@ -556,16 +556,16 @@ async def generate_brief(ticker: str, data: dict) -> InvestmentBrief:
         technicals_json=json.dumps(data["technicals"]),
         news_summary=data["news"]["summary"]
     )
-    
-    message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+
+    response = client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
         max_tokens=2000,
         messages=[
             {"role": "user", "content": prompt}
         ]
     )
-    
-    result = json.loads(message.content[0].text)
+
+    result = json.loads(response.choices[0].message.content)
     return InvestmentBrief(ticker=ticker, **result)
 ```
 
@@ -701,7 +701,7 @@ investment-assistant/
 
 - [ ] Backend: FastAPI skeleton with health check
 - [ ] Backend: yfinance integration for quotes
-- [ ] Backend: Basic Claude integration for brief generation
+- [ ] Backend: Basic Groq integration for brief generation
 - [ ] Frontend: React + Vite + Tailwind setup
 - [ ] Frontend: Single stock search and display
 - [ ] Frontend: Simple brief display
@@ -714,7 +714,7 @@ investment-assistant/
 - [ ] Backend: SQLite database setup
 - [ ] Backend: Watchlist CRUD endpoints
 - [ ] Backend: News aggregation service
-- [ ] Backend: News summarization with Claude
+- [ ] Backend: News summarization with Groq
 - [ ] Frontend: Watchlist management UI
 - [ ] Frontend: News tab with summary
 
@@ -759,7 +759,7 @@ investment-assistant/
 
 ```env
 # API Keys
-CLAUDE_API_KEY=sk-ant-...
+GROQ_API_KEY=gsk_...
 NEWS_API_KEY=...
 ALPHA_VANTAGE_KEY=...
 FINNHUB_KEY=...
@@ -835,7 +835,7 @@ npm run test
 
 4. **Handle errors gracefully** - APIs fail; always have fallbacks and clear error messages
 
-5. **Keep Claude prompts in separate files** - Easier to iterate on them
+5. **Keep AI prompts in separate files** - Easier to iterate on them
 
 6. **Test with real tickers** - Use AAPL, MSFT, NVDA for testing (high liquidity, good data)
 
@@ -847,7 +847,7 @@ npm run test
 - **FastAPI over Flask** - Better async support, automatic OpenAPI docs
 - **React over Vue/Svelte** - Larger ecosystem, more AI training data
 - **yfinance as primary** - Free, reliable enough for personal use
-- **Claude over GPT** - Better at structured output and financial reasoning
+- **Groq (Llama 3.3 70B)** - Fast inference, free tier, great at structured output
 
 ---
 
