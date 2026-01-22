@@ -55,12 +55,8 @@ app.include_router(search.router, prefix="/api/v1")
 
 @app.get("/health")
 async def health_check() -> dict:
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "version": "0.3.0",
-        "cache_size": cache.size,
-    }
+    """Health check endpoint for Render."""
+    return {"status": "ok"}
 
 
 @app.get("/")

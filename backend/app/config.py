@@ -25,8 +25,13 @@ class Settings(BaseSettings):
     debug: bool = True
     cache_ttl_minutes: int = 15
 
-    # CORS
-    cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
+    # CORS - includes localhost and Render domains
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://investiq.onrender.com",
+        "https://investiq-api.onrender.com",
+    ]
 
 
 @lru_cache
