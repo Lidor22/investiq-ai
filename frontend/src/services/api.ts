@@ -13,8 +13,11 @@ import type {
   FinancialRatios,
 } from '../types';
 
+// Use environment variable in production, fallback to proxy path for local dev
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+
 const api = axios.create({
-  baseURL: '/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -129,15 +132,15 @@ export async function getFinancialRatios(ticker: string): Promise<FinancialRatio
 
 // Export endpoints - these return download URLs
 export function getExportSummaryUrl(ticker: string): string {
-  return `/api/v1/export/${ticker}/summary.csv`;
+  return `${API_BASE_URL}/export/${ticker}/summary.csv`;
 }
 
 export function getExportPriceHistoryUrl(ticker: string, period = '6mo'): string {
-  return `/api/v1/export/${ticker}/price-history.csv?period=${period}`;
+  return `${API_BASE_URL}/export/${ticker}/price-history.csv?period=${period}`;
 }
 
 export function getExportFinancialsUrl(ticker: string): string {
-  return `/api/v1/export/${ticker}/financials.json`;
+  return `${API_BASE_URL}/export/${ticker}/financials.json`;
 }
 
 // Search endpoints
