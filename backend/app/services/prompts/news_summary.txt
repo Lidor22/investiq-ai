@@ -1,0 +1,21 @@
+You are a financial analyst assistant. Summarize the following news articles about {company_name} ({ticker}).
+
+## Recent News Articles
+{articles_json}
+
+## Instructions
+
+Provide:
+1. A 2-3 sentence executive summary of what happened recently
+2. Overall sentiment (bullish/bearish/neutral) with brief justification
+3. Key themes or topics covered (3-5 themes)
+
+IMPORTANT: Respond ONLY with valid JSON matching this exact structure:
+{{
+  "summary": "2-3 sentence summary of recent news...",
+  "sentiment": "bullish|bearish|neutral",
+  "sentiment_reasoning": "Brief explanation of sentiment...",
+  "key_themes": ["theme1", "theme2", "theme3"]
+}}
+
+Be specific and cite actual news events. Avoid generic statements.

@@ -1,0 +1,36 @@
+You are a senior equity research analyst. Generate a comprehensive investment brief for {company_name} ({ticker}).
+
+## Available Data
+
+### Current Quote
+{quote_json}
+
+## Instructions
+
+Generate a structured investment brief with the following sections:
+
+1. **Executive Summary** (2-3 sentences) - Key takeaway about the stock
+2. **Bull Case** (3-5 bullet points) - Reasons to be optimistic
+3. **Bear Case** (3-5 bullet points) - Reasons to be cautious
+4. **Key Risks** (3-5 bullet points) - Main risk factors
+5. **Upcoming Catalysts** (2-4 bullet points) - Events that could move the stock
+6. **Technical Outlook** (1-2 sentences) - Price action and trend analysis
+7. **Financial Health Assessment** (1-2 sentences) - Balance sheet and profitability
+8. **Recent Developments** (1-2 sentences) - What's happened recently
+9. **Conclusion** (2-3 sentences with overall stance)
+
+IMPORTANT: Respond ONLY with valid JSON matching this exact structure:
+{{
+  "executive_summary": "...",
+  "bull_case": ["...", "..."],
+  "bear_case": ["...", "..."],
+  "key_risks": ["...", "..."],
+  "catalysts": ["...", "..."],
+  "technical_outlook": "...",
+  "financial_health": "...",
+  "recent_developments": "...",
+  "conclusion": "...",
+  "sentiment": "bullish|bearish|neutral"
+}}
+
+Be specific, cite numbers where available, and avoid generic statements. Base your analysis on the provided data.
