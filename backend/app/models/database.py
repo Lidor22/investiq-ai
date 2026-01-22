@@ -31,13 +31,8 @@ def is_postgres_url(url: str) -> bool:
 
 DATABASE_URL = get_async_database_url(settings.database_url)
 
-# Configure SSL for PostgreSQL (required by Render)
-connect_args: dict = {}
-if is_postgres_url(DATABASE_URL):
-    # Use ssl=True for basic SSL - asyncpg will handle the context
-    connect_args["ssl"] = True
-
-engine = create_async_engine(DATABASE_URL, echo=settings.debug, connect_args=connect_args)
+# No SSL config needed for Render internal connections
+engine = create_async_engine(DATABASE_URL, echo=settings.debug)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
