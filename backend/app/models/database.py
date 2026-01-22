@@ -1,5 +1,6 @@
 """Database models and setup (supports PostgreSQL and SQLite)."""
 
+import ssl
 from datetime import datetime
 from typing import AsyncGenerator
 
@@ -24,9 +25,23 @@ def get_async_database_url(url: str) -> str:
     return url
 
 
+def is_postgres_url(url: str) -> bool:
+    """Check if URL is for PostgreSQL."""
+    return url.startswith(("postgres://", "postgresql://", "postgresql+asyncpg://"))
+
+
 DATABASE_URL = get_async_database_url(settings.database_url)
 
-engine = create_async_engine(DATABASE_URL, echo=settings.debug)
+# Configure SSL for PostgreSQL (required by Render)
+connect_args = {}
+if is_postgres_url(DATABASE_URL):
+    # Create SSL context for asyncpg
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+    connect_args = {"ssl": ssl_context}
+
+engine = create_async_engine(DATABASE_URL, echo=settings.debug, connect_args=connect_args)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
