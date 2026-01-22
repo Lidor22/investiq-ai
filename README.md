@@ -20,7 +20,7 @@ A modern, full-stack investment research platform that combines real-time market
 
 ### Backend
 - **FastAPI** - Modern Python web framework
-- **SQLAlchemy** - Async ORM with SQLite
+- **SQLAlchemy** - Async ORM with PostgreSQL (SQLite for local dev)
 - **yfinance** - Yahoo Finance market data
 - **Groq AI** - Llama 3.3 70B via Groq for fast AI analysis
 - **Pydantic** - Data validation and settings
