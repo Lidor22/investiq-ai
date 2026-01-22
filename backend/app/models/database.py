@@ -1,4 +1,4 @@
-"""SQLite database models and setup."""
+"""Database models and setup (supports PostgreSQL and SQLite)."""
 
 from datetime import datetime
 from typing import AsyncGenerator
@@ -9,8 +9,22 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from app.config import settings
 
-# Convert sqlite:/// to sqlite+aiosqlite:///
-DATABASE_URL = settings.database_url.replace("sqlite:///", "sqlite+aiosqlite:///")
+
+def get_async_database_url(url: str) -> str:
+    """Convert database URL to async driver format."""
+    if url.startswith("postgres://"):
+        # Render uses postgres:// but SQLAlchemy needs postgresql+asyncpg://
+        return url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        # Standard PostgreSQL URL
+        return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif url.startswith("sqlite:///"):
+        # SQLite for local development
+        return url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+    return url
+
+
+DATABASE_URL = get_async_database_url(settings.database_url)
 
 engine = create_async_engine(DATABASE_URL, echo=settings.debug)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
