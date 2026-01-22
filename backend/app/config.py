@@ -13,14 +13,8 @@ class Settings(BaseSettings):
         case_sensitive=False,
     )
 
-    # API Keys (accepts CLAUDE_API_KEY or ANTHROPIC_API_KEY)
-    claude_api_key: str = ""
-    anthropic_api_key: str = ""
-
-    @property
-    def ai_api_key(self) -> str:
-        """Get the AI API key (supports both naming conventions)."""
-        return self.claude_api_key or self.anthropic_api_key
+    # API Keys
+    groq_api_key: str = ""
     news_api_key: str = ""
     alpha_vantage_key: str = ""
 

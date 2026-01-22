@@ -1,10 +1,10 @@
-"""AI service for generating investment briefs using Claude."""
+"""AI service for generating investment briefs using Groq."""
 
 import json
 from datetime import datetime
 from pathlib import Path
 
-import anthropic
+from groq import Groq
 
 from app.config import settings
 from app.models.schemas import InvestmentBrief, NewsSummary, Sentiment, StockQuote
@@ -19,13 +19,15 @@ class AIServiceError(Exception):
 
 
 class AIService:
-    """Service for AI-powered analysis using Claude."""
+    """Service for AI-powered analysis using Groq."""
+
+    MODEL = "llama-3.3-70b-versatile"
 
     def __init__(self):
-        api_key = settings.ai_api_key
+        api_key = settings.groq_api_key
         if not api_key:
-            raise AIServiceError("API key not configured. Set CLAUDE_API_KEY or ANTHROPIC_API_KEY in .env")
-        self.client = anthropic.Anthropic(api_key=api_key)
+            raise AIServiceError("API key not configured. Set GROQ_API_KEY in .env")
+        self.client = Groq(api_key=api_key)
         self._prompts_dir = Path(__file__).parent / "prompts"
 
     def _load_prompt(self, name: str) -> str:
@@ -56,14 +58,14 @@ class AIService:
         )
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+            response = self.client.chat.completions.create(
+                model=self.MODEL,
                 max_tokens=2000,
                 messages=[{"role": "user", "content": prompt}],
             )
 
             # Parse the JSON response
-            response_text = message.content[0].text
+            response_text = response.choices[0].message.content
 
             # Handle potential markdown code blocks
             if "```json" in response_text:
@@ -98,8 +100,8 @@ class AIService:
             raise AIServiceError(f"Failed to parse AI response as JSON: {e}")
         except KeyError as e:
             raise AIServiceError(f"AI response missing required field: {e}")
-        except anthropic.APIError as e:
-            raise AIServiceError(f"Claude API error: {e}")
+        except Exception as e:
+            raise AIServiceError(f"Groq API error: {e}")
 
     async def summarize_news(self, news: NewsSummary, company_name: str) -> NewsSummary:
         """Generate AI summary of news articles.
@@ -133,13 +135,13 @@ class AIService:
         )
 
         try:
-            message = self.client.messages.create(
-                model="claude-sonnet-4-20250514",
+            response = self.client.chat.completions.create(
+                model=self.MODEL,
                 max_tokens=1000,
                 messages=[{"role": "user", "content": prompt}],
             )
 
-            response_text = message.content[0].text
+            response_text = response.choices[0].message.content
 
             # Handle markdown code blocks
             if "```json" in response_text:
