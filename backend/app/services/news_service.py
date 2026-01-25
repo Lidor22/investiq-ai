@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 import yfinance as yf
 
 from app.models.schemas import NewsArticle, NewsSummary
+from app.services.yf_session import yf_session
 
 
 class NewsService:
@@ -27,7 +28,7 @@ class NewsService:
             NewsSummary with articles (no AI summary yet)
         """
         ticker = ticker.upper()
-        stock = yf.Ticker(ticker)
+        stock = yf.Ticker(ticker, session=yf_session)
 
         # Get news from yfinance
         news_items = stock.news or []

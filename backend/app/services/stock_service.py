@@ -5,6 +5,7 @@ from datetime import datetime
 import yfinance as yf
 
 from app.models.schemas import StockNotFoundError, StockQuote
+from app.services.yf_session import yf_session
 
 
 class StockService:
@@ -23,7 +24,7 @@ class StockService:
             StockNotFoundError: If ticker doesn't exist or has no data
         """
         ticker = ticker.upper()
-        stock = yf.Ticker(ticker)
+        stock = yf.Ticker(ticker, session=yf_session)
         info = stock.info
 
         # Check if we got valid data

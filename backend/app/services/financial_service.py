@@ -3,12 +3,14 @@
 from typing import Any
 import yfinance as yf
 
+from app.services.yf_session import yf_session
+
 
 async def get_earnings_data(ticker: str) -> dict[str, Any]:
     """
     Get earnings history and estimates for a ticker.
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
 
     result = {
         "quarterly_earnings": [],
@@ -64,7 +66,7 @@ async def get_income_statement(ticker: str, quarterly: bool = False) -> dict[str
     """
     Get income statement data.
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
 
     try:
         if quarterly:
@@ -111,7 +113,7 @@ async def get_balance_sheet(ticker: str, quarterly: bool = False) -> dict[str, A
     """
     Get balance sheet data.
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
 
     try:
         if quarterly:
@@ -157,7 +159,7 @@ async def get_cash_flow(ticker: str, quarterly: bool = False) -> dict[str, Any]:
     """
     Get cash flow statement data.
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
 
     try:
         if quarterly:
@@ -200,7 +202,7 @@ async def get_financial_ratios(ticker: str) -> dict[str, Any]:
     """
     Get key financial ratios.
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
     info = stock.info
 
     return {

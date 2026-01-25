@@ -5,6 +5,8 @@ from typing import Any
 
 import yfinance as yf
 
+from app.services.yf_session import yf_session
+
 
 async def get_price_history(
     ticker: str,
@@ -22,7 +24,7 @@ async def get_price_history(
     Returns:
         Dictionary with dates and OHLCV data
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
     hist = stock.history(period=period, interval=interval)
 
     if hist.empty:
@@ -44,7 +46,7 @@ async def calculate_technical_indicators(ticker: str) -> dict[str, Any]:
 
     Returns moving averages, RSI, MACD, and support/resistance levels.
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
     hist = stock.history(period="1y", interval="1d")
 
     if hist.empty or len(hist) < 50:
@@ -128,7 +130,7 @@ async def get_analyst_recommendations(ticker: str) -> dict[str, Any]:
     """
     Get analyst recommendations and price targets.
     """
-    stock = yf.Ticker(ticker)
+    stock = yf.Ticker(ticker, session=yf_session)
 
     # Get analyst recommendations
     recommendations = {}
