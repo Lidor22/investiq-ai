@@ -163,7 +163,11 @@ export interface EarningsEstimate {
 export interface QuarterlyEarning {
   quarter: string;
   revenue: number | null;
-  earnings: number | null;
+  earnings: number | null; // This is the actual EPS from Finnhub
+  actual?: number | null; // Alias for earnings (Finnhub returns as 'actual')
+  estimate?: number | null; // EPS estimate
+  surprise?: number | null; // Earnings surprise
+  surprise_percent?: number | null; // Earnings surprise percentage
 }
 
 export interface AnnualEarning {

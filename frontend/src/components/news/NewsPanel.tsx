@@ -143,23 +143,23 @@ function ArticleItem({ article }: { article: NewsArticle }) {
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block px-6 py-4 hover:bg-gray-50 transition-colors dark:hover:bg-gray-700/50"
+      className="group block px-6 py-4 hover:bg-blue-50 transition-colors dark:hover:bg-gray-700/50"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors dark:text-white dark:group-hover:text-blue-400">
+          <h4 className="font-medium text-gray-900 leading-snug line-clamp-2 group-hover:text-blue-700 transition-colors dark:text-white dark:group-hover:text-blue-400">
             {article.title}
           </h4>
-          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-medium text-gray-600 dark:text-gray-300">{article.source}</span>
-            <span className="text-gray-300 dark:text-gray-600">•</span>
+          <div className="mt-2 flex items-center gap-2 text-xs text-gray-500 group-hover:text-gray-600 dark:text-gray-400 dark:group-hover:text-gray-300">
+            <span className="font-medium text-gray-600 group-hover:text-gray-700 dark:text-gray-300">{article.source}</span>
+            <span className="text-gray-400 dark:text-gray-600">•</span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {timeAgo}
             </span>
           </div>
         </div>
-        <ExternalLink className="h-4 w-4 text-gray-400 shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity dark:text-gray-500" />
+        <ExternalLink className="h-4 w-4 text-blue-500 shrink-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity dark:text-blue-400" />
       </div>
     </a>
   );

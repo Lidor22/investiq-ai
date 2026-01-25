@@ -47,19 +47,24 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
     );
   }
 
+  // Finnhub returns EPS data (actual, estimate) not revenue/earnings
   const chartData = view === 'quarterly'
     ? data.quarterly_earnings.map((q) => ({
-        period: q.quarter.substring(0, 7), // YYYY-MM format
-        revenue: q.revenue ? q.revenue / 1e9 : null,
-        earnings: q.earnings ? q.earnings / 1e9 : null,
-      }))
+        period: q.quarter ? q.quarter.substring(0, 7) : 'N/A', // YYYY-MM format
+        actual: q.earnings ?? q.actual ?? null, // EPS actual (earnings field holds actual EPS)
+        estimate: q.estimate ?? null, // EPS estimate
+        surprise: q.surprise ?? null,
+        surprisePercent: q.surprise_percent ?? null,
+      })).reverse() // Show oldest to newest
     : data.annual_earnings.map((a) => ({
         period: a.year,
-        revenue: a.revenue ? a.revenue / 1e9 : null,
-        earnings: a.earnings ? a.earnings / 1e9 : null,
+        actual: a.earnings ?? a.actual ?? null,
+        estimate: a.estimate ?? null,
+        surprise: null,
+        surprisePercent: null,
       }));
 
-  const hasData = chartData.length > 0 && chartData.some((d) => d.revenue || d.earnings);
+  const hasData = chartData.length > 0 && chartData.some((d) => d.actual !== null || d.estimate !== null);
 
   // Theme-aware colors
   const gridColor = isDark ? '#374151' : '#f0f0f0';
@@ -79,7 +84,7 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">Earnings</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Revenue & Net Income</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">EPS Actual vs Estimate</p>
           </div>
         </div>
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1 dark:bg-gray-700">
@@ -124,8 +129,8 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
                 />
                 <YAxis
                   tick={{ fontSize: 11, fill: textColor }}
-                  tickFormatter={(value) => `$${value.toFixed(0)}B`}
-                  width={60}
+                  tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
+                  width={55}
                   axisLine={{ stroke: gridColor }}
                   tickLine={{ stroke: gridColor }}
                 />
@@ -137,9 +142,10 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
                     fontSize: '12px',
                     boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
                   }}
-                  formatter={(value) =>
-                    value !== null && value !== undefined ? [`$${Number(value).toFixed(2)}B`, ''] : ['N/A', '']
-                  }
+                  formatter={(value, name) => {
+                    if (value === null || value === undefined) return ['N/A', name];
+                    return [`$${Number(value).toFixed(2)}`, name];
+                  }}
                   labelStyle={{ color: isDark ? '#f3f4f6' : '#111827', fontWeight: 600, marginBottom: 4 }}
                   itemStyle={{ color: isDark ? '#d1d5db' : '#4b5563' }}
                 />
@@ -147,8 +153,8 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
                   wrapperStyle={{ paddingTop: '20px' }}
                   formatter={(value) => <span style={{ color: textColor, fontSize: '12px' }}>{value}</span>}
                 />
-                <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="earnings" name="Net Income" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="actual" name="Actual EPS" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="estimate" name="Estimated EPS" fill="#3b82f6" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

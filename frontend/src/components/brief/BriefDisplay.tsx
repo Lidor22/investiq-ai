@@ -204,14 +204,14 @@ function AnalysisCard({
   gradient: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow dark:border-gray-700 dark:bg-gray-800">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden hover:shadow-md hover:border-gray-300 transition-all dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600">
       <div className={`h-1 bg-gradient-to-r ${gradient}`} />
       <div className="p-4">
         <div className="flex items-center gap-2 mb-3">
           {icon}
           <h4 className="font-semibold text-gray-900 text-sm dark:text-white">{title}</h4>
         </div>
-        <p className="text-sm text-gray-600 leading-relaxed dark:text-gray-400">{content}</p>
+        <p className="text-sm text-gray-700 leading-relaxed dark:text-gray-300">{content}</p>
       </div>
     </div>
   );
