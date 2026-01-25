@@ -17,7 +17,7 @@ type Tab = 'overview' | 'financials' | 'news' | 'brief';
 function App() {
   const [ticker, setTicker] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
 
   const {
     data: quote,
