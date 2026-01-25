@@ -1,17 +1,14 @@
-"""Financial data service for earnings, income statements, and balance sheets."""
+"""Financial data service for earnings, metrics, and ratios using Finnhub."""
 
 from typing import Any
-import yfinance as yf
 
-from app.services.yf_session import yf_session
+from app.services.finnhub_client import finnhub_client
 
 
 async def get_earnings_data(ticker: str) -> dict[str, Any]:
     """
     Get earnings history and estimates for a ticker.
     """
-    stock = yf.Ticker(ticker, session=yf_session)
-
     result = {
         "quarterly_earnings": [],
         "annual_earnings": [],
@@ -19,89 +16,60 @@ async def get_earnings_data(ticker: str) -> dict[str, Any]:
         "earnings_history": [],
     }
 
-    # Quarterly earnings
     try:
-        earnings = stock.quarterly_earnings
-        if earnings is not None and not earnings.empty:
-            result["quarterly_earnings"] = [
-                {
-                    "quarter": idx.strftime("%Y-%m-%d") if hasattr(idx, 'strftime') else str(idx),
-                    "revenue": float(row.get("Revenue", 0)) if row.get("Revenue") else None,
-                    "earnings": float(row.get("Earnings", 0)) if row.get("Earnings") else None,
-                }
-                for idx, row in earnings.tail(8).iterrows()
-            ]
+        # Get earnings from Finnhub
+        earnings = await finnhub_client.get_earnings(ticker)
+
+        if earnings:
+            # Process earnings history
+            for e in earnings[:8]:  # Last 8 quarters
+                result["quarterly_earnings"].append({
+                    "quarter": e.get("period", ""),
+                    "revenue": None,  # Finnhub earnings endpoint doesn't include revenue
+                    "earnings": e.get("actual"),
+                    "estimate": e.get("estimate"),
+                    "surprise": e.get("surprise"),
+                    "surprise_percent": e.get("surprisePercent"),
+                })
+
+        # Get additional metrics from basic financials
+        financials = await finnhub_client.get_basic_financials(ticker)
+        metrics = financials.get("metric", {})
+
+        result["earnings_estimate"] = {
+            "current_eps": metrics.get("epsBasicExclExtraItemsTTM"),
+            "forward_eps": metrics.get("epsNormalizedAnnual"),
+            "peg_ratio": metrics.get("pegRatio"),
+            "earnings_growth": metrics.get("epsGrowthTTMYoy"),
+            "revenue_growth": metrics.get("revenueGrowthTTMYoy"),
+        }
+
     except Exception:
         pass
-
-    # Annual earnings
-    try:
-        earnings = stock.earnings
-        if earnings is not None and not earnings.empty:
-            result["annual_earnings"] = [
-                {
-                    "year": str(idx),
-                    "revenue": float(row.get("Revenue", 0)) if row.get("Revenue") else None,
-                    "earnings": float(row.get("Earnings", 0)) if row.get("Earnings") else None,
-                }
-                for idx, row in earnings.tail(5).iterrows()
-            ]
-    except Exception:
-        pass
-
-    # Earnings estimates from info
-    info = stock.info
-    result["earnings_estimate"] = {
-        "current_eps": info.get("trailingEps"),
-        "forward_eps": info.get("forwardEps"),
-        "peg_ratio": info.get("pegRatio"),
-        "earnings_growth": info.get("earningsGrowth"),
-        "revenue_growth": info.get("revenueGrowth"),
-    }
 
     return result
 
 
 async def get_income_statement(ticker: str, quarterly: bool = False) -> dict[str, Any]:
     """
-    Get income statement data.
+    Get income statement data from Finnhub metrics.
+    Note: Finnhub free tier provides metrics but not full statements.
     """
-    stock = yf.Ticker(ticker, session=yf_session)
-
     try:
-        if quarterly:
-            stmt = stock.quarterly_income_stmt
-        else:
-            stmt = stock.income_stmt
+        financials = await finnhub_client.get_basic_financials(ticker)
+        metrics = financials.get("metric", {})
 
-        if stmt is None or stmt.empty:
-            return {"periods": [], "data": {}}
-
-        # Get column names (dates) and convert to strings
-        periods = [col.strftime("%Y-%m-%d") if hasattr(col, 'strftime') else str(col) for col in stmt.columns[:4]]
-
-        # Key metrics to extract
-        metrics = [
-            "Total Revenue",
-            "Gross Profit",
-            "Operating Income",
-            "Net Income",
-            "EBITDA",
-            "Basic EPS",
-            "Diluted EPS",
-        ]
-
-        data = {}
-        for metric in metrics:
-            if metric in stmt.index:
-                values = stmt.loc[metric].head(4).tolist()
-                data[metric.lower().replace(" ", "_")] = [
-                    float(v) if v and not (isinstance(v, float) and v != v) else None
-                    for v in values
-                ]
+        # Extract income statement related metrics
+        data = {
+            "total_revenue": [metrics.get("revenueTTM")] if metrics.get("revenueTTM") else [],
+            "gross_profit": [metrics.get("grossMarginTTM", 0) * metrics.get("revenueTTM", 0) / 100] if metrics.get("revenueTTM") else [],
+            "operating_income": [metrics.get("operatingMarginTTM", 0) * metrics.get("revenueTTM", 0) / 100] if metrics.get("revenueTTM") else [],
+            "net_income": [metrics.get("netProfitMarginTTM", 0) * metrics.get("revenueTTM", 0) / 100] if metrics.get("revenueTTM") else [],
+            "basic_eps": [metrics.get("epsBasicExclExtraItemsTTM")],
+        }
 
         return {
-            "periods": periods,
+            "periods": ["TTM"],
             "data": data,
             "quarterly": quarterly,
         }
@@ -111,43 +79,24 @@ async def get_income_statement(ticker: str, quarterly: bool = False) -> dict[str
 
 async def get_balance_sheet(ticker: str, quarterly: bool = False) -> dict[str, Any]:
     """
-    Get balance sheet data.
+    Get balance sheet data from Finnhub metrics.
+    Note: Finnhub free tier provides metrics but not full statements.
     """
-    stock = yf.Ticker(ticker, session=yf_session)
-
     try:
-        if quarterly:
-            stmt = stock.quarterly_balance_sheet
-        else:
-            stmt = stock.balance_sheet
+        financials = await finnhub_client.get_basic_financials(ticker)
+        metrics = financials.get("metric", {})
 
-        if stmt is None or stmt.empty:
-            return {"periods": [], "data": {}}
-
-        periods = [col.strftime("%Y-%m-%d") if hasattr(col, 'strftime') else str(col) for col in stmt.columns[:4]]
-
-        metrics = [
-            "Total Assets",
-            "Total Liabilities Net Minority Interest",
-            "Total Equity Gross Minority Interest",
-            "Cash And Cash Equivalents",
-            "Total Debt",
-            "Net Debt",
-            "Working Capital",
-        ]
-
-        data = {}
-        for metric in metrics:
-            if metric in stmt.index:
-                values = stmt.loc[metric].head(4).tolist()
-                key = metric.lower().replace(" ", "_").replace("_net_minority_interest", "").replace("_gross_minority_interest", "")
-                data[key] = [
-                    float(v) if v and not (isinstance(v, float) and v != v) else None
-                    for v in values
-                ]
+        data = {
+            "total_assets": [metrics.get("totalAssets")],
+            "total_liabilities": [metrics.get("totalLiabilities")],
+            "total_equity": [metrics.get("totalEquity")],
+            "cash_and_cash_equivalents": [metrics.get("cashPerShareAnnual", 0) * metrics.get("shareOutstanding", 0)] if metrics.get("shareOutstanding") else [],
+            "total_debt": [metrics.get("totalDebt")],
+            "net_debt": [metrics.get("netDebtAnnual")],
+        }
 
         return {
-            "periods": periods,
+            "periods": ["Latest"],
             "data": data,
             "quarterly": quarterly,
         }
@@ -157,40 +106,21 @@ async def get_balance_sheet(ticker: str, quarterly: bool = False) -> dict[str, A
 
 async def get_cash_flow(ticker: str, quarterly: bool = False) -> dict[str, Any]:
     """
-    Get cash flow statement data.
+    Get cash flow statement data from Finnhub metrics.
+    Note: Finnhub free tier provides metrics but not full statements.
     """
-    stock = yf.Ticker(ticker, session=yf_session)
-
     try:
-        if quarterly:
-            stmt = stock.quarterly_cashflow
-        else:
-            stmt = stock.cashflow
+        financials = await finnhub_client.get_basic_financials(ticker)
+        metrics = financials.get("metric", {})
 
-        if stmt is None or stmt.empty:
-            return {"periods": [], "data": {}}
-
-        periods = [col.strftime("%Y-%m-%d") if hasattr(col, 'strftime') else str(col) for col in stmt.columns[:4]]
-
-        metrics = [
-            "Operating Cash Flow",
-            "Investing Cash Flow",
-            "Financing Cash Flow",
-            "Free Cash Flow",
-            "Capital Expenditure",
-        ]
-
-        data = {}
-        for metric in metrics:
-            if metric in stmt.index:
-                values = stmt.loc[metric].head(4).tolist()
-                data[metric.lower().replace(" ", "_")] = [
-                    float(v) if v and not (isinstance(v, float) and v != v) else None
-                    for v in values
-                ]
+        data = {
+            "operating_cash_flow": [metrics.get("cashFlowPerShareTTM", 0) * metrics.get("shareOutstanding", 0)] if metrics.get("shareOutstanding") else [],
+            "free_cash_flow": [metrics.get("freeCashFlowTTM")],
+            "capital_expenditure": [metrics.get("capexTTM")],
+        }
 
         return {
-            "periods": periods,
+            "periods": ["TTM"],
             "data": data,
             "quarterly": quarterly,
         }
@@ -200,44 +130,53 @@ async def get_cash_flow(ticker: str, quarterly: bool = False) -> dict[str, Any]:
 
 async def get_financial_ratios(ticker: str) -> dict[str, Any]:
     """
-    Get key financial ratios.
+    Get key financial ratios from Finnhub.
     """
-    stock = yf.Ticker(ticker, session=yf_session)
-    info = stock.info
+    try:
+        financials = await finnhub_client.get_basic_financials(ticker)
+        metrics = financials.get("metric", {})
 
-    return {
-        "valuation": {
-            "pe_ratio": info.get("trailingPE"),
-            "forward_pe": info.get("forwardPE"),
-            "peg_ratio": info.get("pegRatio"),
-            "price_to_book": info.get("priceToBook"),
-            "price_to_sales": info.get("priceToSalesTrailing12Months"),
-            "enterprise_value": info.get("enterpriseValue"),
-            "ev_to_revenue": info.get("enterpriseToRevenue"),
-            "ev_to_ebitda": info.get("enterpriseToEbitda"),
-        },
-        "profitability": {
-            "profit_margin": info.get("profitMargins"),
-            "operating_margin": info.get("operatingMargins"),
-            "gross_margin": info.get("grossMargins"),
-            "return_on_assets": info.get("returnOnAssets"),
-            "return_on_equity": info.get("returnOnEquity"),
-        },
-        "liquidity": {
-            "current_ratio": info.get("currentRatio"),
-            "quick_ratio": info.get("quickRatio"),
-            "debt_to_equity": info.get("debtToEquity"),
-        },
-        "growth": {
-            "revenue_growth": info.get("revenueGrowth"),
-            "earnings_growth": info.get("earningsGrowth"),
-            "quarterly_revenue_growth": info.get("revenueQuarterlyGrowth"),
-            "quarterly_earnings_growth": info.get("earningsQuarterlyGrowth"),
-        },
-        "dividends": {
-            "dividend_rate": info.get("dividendRate"),
-            "dividend_yield": info.get("dividendYield"),
-            "payout_ratio": info.get("payoutRatio"),
-            "ex_dividend_date": info.get("exDividendDate"),
-        },
-    }
+        return {
+            "valuation": {
+                "pe_ratio": metrics.get("peBasicExclExtraTTM"),
+                "forward_pe": metrics.get("peExclExtraNormalizedAnnual"),
+                "peg_ratio": metrics.get("pegRatio"),
+                "price_to_book": metrics.get("pbAnnual"),
+                "price_to_sales": metrics.get("psTTM"),
+                "enterprise_value": metrics.get("enterpriseValue"),
+                "ev_to_revenue": metrics.get("evToRevenueTTM"),
+                "ev_to_ebitda": metrics.get("enterpriseValueEbitdaTTM"),
+            },
+            "profitability": {
+                "profit_margin": metrics.get("netProfitMarginTTM"),
+                "operating_margin": metrics.get("operatingMarginTTM"),
+                "gross_margin": metrics.get("grossMarginTTM"),
+                "return_on_assets": metrics.get("roaTTM"),
+                "return_on_equity": metrics.get("roeTTM"),
+            },
+            "liquidity": {
+                "current_ratio": metrics.get("currentRatioAnnual"),
+                "quick_ratio": metrics.get("quickRatioAnnual"),
+                "debt_to_equity": metrics.get("totalDebtToEquityAnnual"),
+            },
+            "growth": {
+                "revenue_growth": metrics.get("revenueGrowthTTMYoy"),
+                "earnings_growth": metrics.get("epsGrowthTTMYoy"),
+                "quarterly_revenue_growth": metrics.get("revenueGrowthQuarterlyYoy"),
+                "quarterly_earnings_growth": metrics.get("epsGrowthQuarterlyYoy"),
+            },
+            "dividends": {
+                "dividend_rate": metrics.get("dividendPerShareAnnual"),
+                "dividend_yield": metrics.get("dividendYieldIndicatedAnnual"),
+                "payout_ratio": metrics.get("payoutRatioAnnual"),
+                "ex_dividend_date": None,  # Not available in basic metrics
+            },
+        }
+    except Exception:
+        return {
+            "valuation": {},
+            "profitability": {},
+            "liquidity": {},
+            "growth": {},
+            "dividends": {},
+        }

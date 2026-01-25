@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     # API Keys
     groq_api_key: str = ""
+    finnhub_api_key: str = ""
     news_api_key: str = ""
     alpha_vantage_key: str = ""
 

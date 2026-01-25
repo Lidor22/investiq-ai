@@ -23,16 +23,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize database on startup."""
-    logger.info("Starting InvestIQ API...")
+    logger.info("Starting InvestIQ API v0.4.0 (Finnhub)...")
 
     # Initialize database
     await init_db()
     logger.info("Database initialized")
-
-    # Log yfinance session type
-    from app.services.yf_session import yf_session
-    session_type = type(yf_session).__module__ if yf_session else "None"
-    logger.info(f"YFinance session type: {session_type}")
 
     yield
     # Cleanup on shutdown
@@ -43,7 +38,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="InvestIQ API",
     description="Investment Research Assistant API",
-    version="0.3.0",
+    version="0.4.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
@@ -84,6 +79,6 @@ async def root() -> dict:
     """Root endpoint with API info."""
     return {
         "name": "InvestIQ API",
-        "version": "0.3.0",
+        "version": "0.4.0",
         "docs": "/docs",
     }

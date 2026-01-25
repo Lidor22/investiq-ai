@@ -6,13 +6,14 @@ A modern, full-stack investment research platform that combines real-time market
 
 ## Features
 
-- **Real-time Stock Data** - Live quotes, price history, and key metrics from Yahoo Finance
+- **Real-time Stock Data** - Live quotes, price history, and key metrics from Finnhub
 - **AI Investment Briefs** - Comprehensive AI-generated analysis including bull/bear cases, risks, and catalysts
 - **Technical Analysis** - Moving averages, RSI, MACD, support/resistance levels
 - **Financial Metrics** - Valuation ratios, profitability, liquidity, and growth metrics
 - **Earnings Data** - Quarterly/annual earnings with estimates and growth projections
 - **News with AI Summaries** - Latest news articles with AI-powered summarization and sentiment
-- **Watchlist** - Track your favorite stocks with persistent storage
+- **User Authentication** - Google OAuth login for personalized experience
+- **Personal Watchlists** - Track your favorite stocks with user-specific storage
 - **Dark Mode** - Full dark mode support with smooth transitions
 - **Export Options** - Download data as PDF or CSV
 
@@ -21,9 +22,10 @@ A modern, full-stack investment research platform that combines real-time market
 ### Backend
 - **FastAPI** - Modern Python web framework
 - **SQLAlchemy** - Async ORM with PostgreSQL (SQLite for local dev)
-- **yfinance** - Yahoo Finance market data
+- **Finnhub API** - Real-time stock market data (free tier: 60 calls/minute)
 - **Groq AI** - Llama 3.3 70B via Groq for fast AI analysis
 - **Pydantic** - Data validation and settings
+- **Google OAuth** - User authentication
 
 ### Frontend
 - **React 18** - UI library with hooks
@@ -38,7 +40,9 @@ A modern, full-stack investment research platform that combines real-time market
 ### Prerequisites
 - Python 3.11+
 - Node.js 18+
+- Finnhub API key from [Finnhub](https://finnhub.io/) (free)
 - Groq API key from [Groq Console](https://console.groq.com/) (free)
+- Google OAuth credentials from [Google Cloud Console](https://console.cloud.google.com/) (for authentication)
 
 ### Backend Setup
 
@@ -54,7 +58,11 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Edit .env and add your GROQ_API_KEY
+# Edit .env and add your API keys:
+#   FINNHUB_API_KEY=your_finnhub_key
+#   GROQ_API_KEY=your_groq_key
+#   GOOGLE_CLIENT_ID=your_google_client_id
+#   GOOGLE_CLIENT_SECRET=your_google_client_secret
 
 # Run the server
 uvicorn app.main:app --reload
@@ -77,6 +85,19 @@ npm run dev
 
 The app will be available at `http://localhost:5173`
 
+## Environment Variables
+
+### Backend (.env)
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `FINNHUB_API_KEY` | Finnhub API key for stock data | Yes |
+| `GROQ_API_KEY` | Groq API key for AI analysis | Yes |
+| `GOOGLE_CLIENT_ID` | Google OAuth client ID | Yes (for auth) |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth client secret | Yes (for auth) |
+| `DATABASE_URL` | Database connection string | No (defaults to SQLite) |
+| `JWT_SECRET` | Secret key for JWT tokens | Yes (in production) |
+| `FRONTEND_URL` | Frontend URL for OAuth redirects | No (defaults to localhost) |
+
 ## Project Structure
 
 ```
@@ -85,13 +106,19 @@ investments-assistant/
 │   ├── app/
 │   │   ├── api/routes/      # API endpoints
 │   │   ├── services/        # Business logic
+│   │   │   ├── finnhub_client.py  # Finnhub API client
+│   │   │   ├── stock_service.py   # Stock quotes
+│   │   │   ├── news_service.py    # News aggregation
+│   │   │   ├── technical_service.py # Technical analysis
+│   │   │   └── financial_service.py # Financial data
 │   │   ├── models/          # Database models
-│   │   └── schemas/         # Pydantic schemas
+│   │   └── config.py        # Settings
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/
 │   │   ├── components/      # React components
 │   │   ├── hooks/           # Custom hooks
+│   │   ├── contexts/        # Auth context
 │   │   ├── services/        # API client
 │   │   └── types/           # TypeScript types
 │   └── package.json
@@ -102,8 +129,8 @@ investments-assistant/
 
 | Endpoint | Description |
 |----------|-------------|
-| `GET /api/v1/stocks/{ticker}` | Get stock quote |
-| `GET /api/v1/stocks/{ticker}/history` | Get price history |
+| `GET /api/v1/stock/{ticker}/quote` | Get stock quote |
+| `GET /api/v1/technical/{ticker}/history` | Get price history |
 | `GET /api/v1/technical/{ticker}/indicators` | Get technical indicators |
 | `GET /api/v1/technical/{ticker}/analyst` | Get analyst ratings |
 | `GET /api/v1/financial/{ticker}/earnings` | Get earnings data |
@@ -111,16 +138,25 @@ investments-assistant/
 | `POST /api/v1/brief` | Generate AI brief |
 | `GET /api/v1/brief/{ticker}` | Get cached brief |
 | `GET /api/v1/news/{ticker}/summary` | Get news with AI summary |
-| `GET /api/v1/watchlist` | Get watchlist |
+| `GET /api/v1/watchlist` | Get user's watchlist |
 | `POST /api/v1/watchlist` | Add to watchlist |
+| `GET /api/v1/auth/login` | Initiate Google OAuth |
+| `GET /api/v1/auth/callback` | OAuth callback |
+| `GET /api/v1/auth/me` | Get current user |
 
-## Screenshots
+## Deployment
 
-### Light Mode
-The clean, modern interface with real-time data and AI insights.
+### Frontend (Vercel)
+1. Connect your GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy
 
-### Dark Mode
-Full dark mode support for comfortable viewing in any environment.
+### Backend (Render)
+1. Create a new Web Service on Render
+2. Connect your GitHub repository
+3. Set environment variables (FINNHUB_API_KEY, GROQ_API_KEY, etc.)
+4. Set build command: `pip install -r requirements.txt`
+5. Set start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 
 ## Contributing
 
