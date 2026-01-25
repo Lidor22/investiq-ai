@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -11,14 +12,32 @@ from app.models.database import init_db
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.services.cache import cache
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize database on startup."""
+    logger.info("Starting InvestIQ API...")
+
+    # Initialize database
     await init_db()
+    logger.info("Database initialized")
+
+    # Log yfinance session type
+    from app.services.yf_session import yf_session
+    session_type = type(yf_session).__module__ if yf_session else "None"
+    logger.info(f"YFinance session type: {session_type}")
+
     yield
     # Cleanup on shutdown
     await cache.clear()
+    logger.info("InvestIQ API shutdown complete")
 
 
 app = FastAPI(

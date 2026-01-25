@@ -123,10 +123,65 @@ class Brief(Base):
     generated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
+async def run_migrations(conn) -> None:
+    """Run manual migrations for schema changes."""
+    from sqlalchemy import text, inspect
+
+    # Check if we're on PostgreSQL
+    if is_postgres_url(settings.database_url):
+        # Check if user_id column exists in watchlist table
+        result = await conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'watchlist' AND column_name = 'user_id'
+        """))
+        column_exists = result.fetchone() is not None
+
+        if not column_exists:
+            print("Migration: Adding user_id column to watchlist table...")
+            # Add user_id column
+            await conn.execute(text("""
+                ALTER TABLE watchlist
+                ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE
+            """))
+            # Add index for user_id
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_watchlist_user_id ON watchlist(user_id)
+            """))
+            print("Migration: user_id column added successfully")
+
+        # Check if unique constraint exists
+        result = await conn.execute(text("""
+            SELECT constraint_name
+            FROM information_schema.table_constraints
+            WHERE table_name = 'watchlist' AND constraint_name = 'uq_user_ticker'
+        """))
+        constraint_exists = result.fetchone() is not None
+
+        if not constraint_exists:
+            print("Migration: Adding unique constraint for user_id + ticker...")
+            # First, remove any duplicate entries (keep the oldest)
+            await conn.execute(text("""
+                DELETE FROM watchlist w1
+                USING watchlist w2
+                WHERE w1.id > w2.id
+                AND w1.user_id IS NOT DISTINCT FROM w2.user_id
+                AND w1.ticker = w2.ticker
+            """))
+            # Add unique constraint
+            await conn.execute(text("""
+                ALTER TABLE watchlist
+                ADD CONSTRAINT uq_user_ticker UNIQUE (user_id, ticker)
+            """))
+            print("Migration: Unique constraint added successfully")
+
+
 async def init_db() -> None:
     """Initialize database and create tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Run migrations after creating tables
+        await run_migrations(conn)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
