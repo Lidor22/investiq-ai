@@ -174,6 +174,8 @@ export interface AnnualEarning {
   year: string;
   revenue: number | null;
   earnings: number | null;
+  actual?: number | null;
+  estimate?: number | null;
 }
 
 export interface EarningsData {
