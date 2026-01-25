@@ -19,18 +19,20 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 
 
+def is_production() -> bool:
+    """Check if we're running in production."""
+    return "vercel.app" in settings.frontend_url or "investiq" in settings.frontend_url
+
+
 def get_google_redirect_uri() -> str:
     """Get the OAuth callback URL based on environment."""
-    # Check if we're in production (Render)
-    if settings.google_client_id and "onrender.com" in settings.cors_origins[-1]:
+    if is_production():
         return "https://investiq-ai.onrender.com/api/v1/auth/google/callback"
     return "http://localhost:8000/api/v1/auth/google/callback"
 
 
 def get_frontend_url() -> str:
     """Get the frontend URL based on environment."""
-    if "vercel.app" in str(settings.cors_origins):
-        return "https://investiq-ai.vercel.app"
     return settings.frontend_url
 
 
