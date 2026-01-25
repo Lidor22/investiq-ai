@@ -72,7 +72,7 @@ function App() {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       {/* Header */}
-      <header className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900">
+      <header className="relative bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900">
         {/* Decorative elements */}
         <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px]" />
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
