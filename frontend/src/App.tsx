@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Moon, Sun, TrendingUp, Sparkles, BarChart3, Newspaper, Brain } from 'lucide-react';
 import { useStockQuote, useBrief, useGenerateBrief } from './hooks/useStock';
 import { useTheme } from './hooks/useTheme';
-import { useAuth } from './contexts/AuthContext';
 import { StockSearch } from './components/stock/StockSearch';
 import { StockQuoteCard } from './components/stock/StockQuoteCard';
 import { BriefDisplay } from './components/brief/BriefDisplay';
