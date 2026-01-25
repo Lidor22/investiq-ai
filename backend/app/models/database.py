@@ -3,9 +3,9 @@
 from datetime import datetime
 from typing import AsyncGenerator
 
-from sqlalchemy import String, Text, DateTime, JSON, func
+from sqlalchemy import String, Text, DateTime, JSON, func, ForeignKey, UniqueConstraint
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.config import settings
 
@@ -41,17 +41,43 @@ class Base(DeclarativeBase):
     pass
 
 
+class User(Base):
+    """User account from Google OAuth."""
+
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    google_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    name: Mapped[str | None] = mapped_column(String(255))
+    picture: Mapped[str | None] = mapped_column(String(500))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    last_login: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    # Relationship to watchlist items
+    watchlist_items: Mapped[list["Watchlist"]] = relationship("Watchlist", back_populates="user", cascade="all, delete-orphan")
+
+
 class Watchlist(Base):
     """Watchlist items table."""
 
     __tablename__ = "watchlist"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    ticker: Mapped[str] = mapped_column(String(10), unique=True, nullable=False, index=True)
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
+    ticker: Mapped[str] = mapped_column(String(10), nullable=False, index=True)
     name: Mapped[str | None] = mapped_column(String(255))
     category: Mapped[str | None] = mapped_column(String(100))
     notes: Mapped[str | None] = mapped_column(Text)
     added_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    # Relationship to user
+    user: Mapped["User | None"] = relationship("User", back_populates="watchlist_items")
+
+    __table_args__ = (
+        # Each user can only have a ticker once in their watchlist
+        UniqueConstraint("user_id", "ticker", name="uq_user_ticker"),
+    )
 
 
 class StockCache(Base):

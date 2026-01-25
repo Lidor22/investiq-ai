@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Moon, Sun, TrendingUp, Sparkles, BarChart3, Newspaper, Brain } from 'lucide-react';
 import { useStockQuote, useBrief, useGenerateBrief } from './hooks/useStock';
 import { useTheme } from './hooks/useTheme';
+import { useAuth } from './contexts/AuthContext';
 import { StockSearch } from './components/stock/StockSearch';
 import { StockQuoteCard } from './components/stock/StockQuoteCard';
 import { BriefDisplay } from './components/brief/BriefDisplay';
@@ -11,6 +12,7 @@ import { PriceChart, TechnicalIndicators, AnalystPanel } from './components/tech
 import { EarningsChart, FinancialRatiosPanel } from './components/financial';
 import { LoadingSpinner } from './components/shared/LoadingSpinner';
 import { ErrorMessage } from './components/shared/ErrorMessage';
+import { UserMenu } from './components/auth/UserMenu';
 
 type Tab = 'overview' | 'financials' | 'news' | 'brief';
 
@@ -92,7 +94,7 @@ function App() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <StockSearch onSearch={handleSearch} isLoading={isLoadingQuote} />
 
               {/* Theme Toggle */}
@@ -103,6 +105,9 @@ function App() {
               >
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </button>
+
+              {/* User Menu */}
+              <UserMenu />
             </div>
           </div>
         </div>

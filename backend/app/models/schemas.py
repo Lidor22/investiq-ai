@@ -99,6 +99,38 @@ class BriefGenerateRequest(BaseModel):
     force_regenerate: bool = Field(default=False, description="Force regeneration, bypass cache")
 
 
+# User/Auth Models
+class UserBase(BaseModel):
+    """Base user schema."""
+
+    email: str
+    name: str | None = None
+    picture: str | None = None
+
+
+class UserCreate(UserBase):
+    """Schema for creating a user from Google OAuth."""
+
+    google_id: str
+
+
+class UserResponse(UserBase):
+    """User response schema."""
+
+    id: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TokenResponse(BaseModel):
+    """JWT token response."""
+
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
 # Watchlist Models
 class WatchlistItemCreate(BaseModel):
     """Request body for adding a ticker to watchlist."""

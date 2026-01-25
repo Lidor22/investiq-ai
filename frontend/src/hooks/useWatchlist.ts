@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getWatchlist, addToWatchlist, removeFromWatchlist, getWatchlistCategories } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 import type { WatchlistItemCreate } from '../types';
 
 /** Hook for fetching watchlist */
 export function useWatchlist(category?: string) {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['watchlist', category],
+    queryKey: ['watchlist', category, user?.id],
     queryFn: () => getWatchlist(category),
     staleTime: 1000 * 60, // 1 minute
   });

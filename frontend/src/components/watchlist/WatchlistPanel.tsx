@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Plus, Trash2, Star, X } from 'lucide-react';
+import { Plus, Trash2, Star, X, LogIn } from 'lucide-react';
 import { useWatchlist, useAddToWatchlist, useRemoveFromWatchlist } from '../../hooks/useWatchlist';
+import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import type { WatchlistItem } from '../../types';
 
@@ -12,6 +13,7 @@ interface WatchlistPanelProps {
 export function WatchlistPanel({ onSelectTicker, selectedTicker }: WatchlistPanelProps) {
   const [newTicker, setNewTicker] = useState('');
   const [showAdd, setShowAdd] = useState(false);
+  const { isAuthenticated, login } = useAuth();
 
   const { data: watchlist, isLoading } = useWatchlist();
   const addMutation = useAddToWatchlist();
@@ -50,16 +52,18 @@ export function WatchlistPanel({ onSelectTicker, selectedTicker }: WatchlistPane
             <span className="text-xs text-gray-500 dark:text-gray-400">({watchlist.length})</span>
           ) : null}
         </div>
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
-            showAdd
-              ? 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
-              : 'bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white'
-          } shadow-sm`}
-        >
-          {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        </button>
+        {isAuthenticated && (
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${
+              showAdd
+                ? 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-300'
+                : 'bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-white'
+            } shadow-sm`}
+          >
+            {showAdd ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          </button>
+        )}
       </div>
 
       {/* Add ticker form */}
@@ -96,6 +100,20 @@ export function WatchlistPanel({ onSelectTicker, selectedTicker }: WatchlistPane
         {isLoading ? (
           <div className="flex justify-center py-8">
             <LoadingSpinner size="sm" />
+          </div>
+        ) : !isAuthenticated ? (
+          <div className="py-8 text-center px-4">
+            <LogIn className="h-8 w-8 text-gray-300 mx-auto mb-2 dark:text-gray-600" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Sign in to save your watchlist
+            </p>
+            <button
+              onClick={login}
+              className="mt-3 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              <LogIn className="h-4 w-4" />
+              Sign in with Google
+            </button>
           </div>
         ) : !watchlist?.length ? (
           <div className="py-8 text-center">

@@ -25,6 +25,18 @@ class Settings(BaseSettings):
     debug: bool = True
     cache_ttl_minutes: int = 15
 
+    # Google OAuth
+    google_client_id: str = ""
+    google_client_secret: str = ""
+
+    # JWT Settings
+    jwt_secret: str = "dev-secret-key-change-in-production"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 60 * 24 * 7  # 7 days
+
+    # Frontend URL for OAuth redirects
+    frontend_url: str = "http://localhost:5173"
+
     # CORS - includes localhost, Render, and Vercel domains
     cors_origins: list[str] = [
         "http://localhost:5173",
