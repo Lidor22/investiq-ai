@@ -23,6 +23,10 @@ class FinnhubClient:
         """Make an async request to Finnhub API."""
         async with httpx.AsyncClient() as client:
             url = f"{self.base_url}{endpoint}"
+            # Add token as query parameter (required for some endpoints on free tier)
+            if params is None:
+                params = {}
+            params["token"] = self.api_key
             response = await client.get(
                 url,
                 params=params,
