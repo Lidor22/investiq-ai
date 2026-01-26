@@ -32,6 +32,7 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
 
   const { price_targets } = data;
   const hasTargets = price_targets.target_mean !== null;
+  const hasRecommendations = data.recommendations.length > 0;
 
   // Map recommendation to display values
   const recommendationDisplay: Record<string, { label: string; color: string; bg: string; darkBg: string }> = {
@@ -62,7 +63,7 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
       </div>
 
       <div className="p-4 space-y-4">
-        {hasTargets ? (
+        {hasTargets && (
           <>
             {/* Price Target Range */}
             <div>
@@ -142,7 +143,10 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
               </div>
             )}
           </>
-        ) : (
+        )}
+
+        {/* Show "no data" only when there's neither price targets nor recommendations */}
+        {!hasTargets && !hasRecommendations && (
           <div className="text-center py-8">
             <Target className="h-10 w-10 text-gray-300 mx-auto mb-2 dark:text-gray-600" />
             <p className="text-gray-500 dark:text-gray-400">No analyst data available</p>
@@ -150,7 +154,7 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
         )}
 
         {/* Recent Recommendations */}
-        {data.recommendations.length > 0 && (
+        {hasRecommendations && (
           <div>
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2.5 dark:text-gray-400">Recent Ratings</h4>
             <div className="space-y-1.5 max-h-36 overflow-y-auto">
