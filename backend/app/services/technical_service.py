@@ -125,6 +125,62 @@ def _calculate_ema(prices: list[float], period: int) -> float | None:
     return ema
 
 
+def _calculate_ema_series(prices: list[float], period: int) -> list[float]:
+    """Calculate EMA series for all prices (returns list of EMA values)."""
+    if len(prices) < period:
+        return []
+
+    multiplier = 2 / (period + 1)
+    ema_values = []
+    ema = sum(prices[:period]) / period  # Start with SMA
+    ema_values.append(ema)
+
+    for price in prices[period:]:
+        ema = (price * multiplier) + (ema * (1 - multiplier))
+        ema_values.append(ema)
+
+    return ema_values
+
+
+def _calculate_macd(prices: list[float]) -> dict[str, float | None]:
+    """Calculate MACD indicator (12, 26, 9 periods).
+
+    Returns dict with macd_line, signal_line, and histogram.
+    """
+    if len(prices) < 26:
+        return {"macd_line": None, "signal_line": None, "histogram": None}
+
+    # Calculate EMA series
+    ema_12_series = _calculate_ema_series(prices, 12)
+    ema_26_series = _calculate_ema_series(prices, 26)
+
+    if not ema_12_series or not ema_26_series:
+        return {"macd_line": None, "signal_line": None, "histogram": None}
+
+    # MACD line = EMA12 - EMA26 (align the series)
+    # EMA26 series starts 14 periods later than EMA12
+    offset = 26 - 12  # 14
+    macd_line_series = []
+    for i, ema26 in enumerate(ema_26_series):
+        ema12 = ema_12_series[i + offset]
+        macd_line_series.append(ema12 - ema26)
+
+    if len(macd_line_series) < 9:
+        return {"macd_line": macd_line_series[-1] if macd_line_series else None,
+                "signal_line": None, "histogram": None}
+
+    # Signal line = 9-period EMA of MACD line
+    signal_line = _calculate_ema(macd_line_series, 9)
+    macd_line = macd_line_series[-1]
+    histogram = (macd_line - signal_line) if signal_line else None
+
+    return {
+        "macd_line": macd_line,
+        "signal_line": signal_line,
+        "histogram": histogram
+    }
+
+
 def _calculate_rsi(prices: list[float], period: int = 14) -> float | None:
     """Calculate Relative Strength Index."""
     if len(prices) < period + 1:
@@ -208,10 +264,11 @@ async def calculate_technical_indicators(ticker: str) -> dict[str, Any]:
     # RSI (14-period)
     rsi_value = _calculate_rsi(close, 14)
 
-    # MACD
-    macd_line = (ema_12 - ema_26) if (ema_12 and ema_26) else None
-    signal_line = _calculate_ema(close, 9)
-    macd_histogram = (macd_line - signal_line) if (macd_line and signal_line) else None
+    # MACD (using proper calculation: signal line is EMA of MACD line, not price)
+    macd_data = _calculate_macd(close)
+    macd_line = macd_data["macd_line"]
+    signal_line = macd_data["signal_line"]
+    macd_histogram = macd_data["histogram"]
 
     # Support and Resistance (simple pivot points)
     recent_high = max(high[-20:])
