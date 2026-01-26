@@ -53,7 +53,7 @@ export function BriefDisplay({ brief, onRegenerate, isRegenerating }: BriefDispl
 
       <div className="p-6 space-y-6">
         {/* Executive Summary */}
-        <div className="rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 p-5 border border-gray-100 dark:from-gray-700/50 dark:to-slate-700/50 dark:border-gray-600">
+        <div className="rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 p-5 border border-gray-100 dark:from-gray-800 dark:to-gray-800 dark:border-gray-700">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-5 w-5 text-purple-500" />
             <h4 className="font-semibold text-gray-900 dark:text-white">Executive Summary</h4>
@@ -116,7 +116,7 @@ export function BriefDisplay({ brief, onRegenerate, isRegenerating }: BriefDispl
         </div>
 
         {/* Conclusion */}
-        <div className="rounded-xl bg-gradient-to-r from-slate-100 to-gray-100 p-5 border border-gray-200 dark:from-slate-700/50 dark:to-gray-700/50 dark:border-gray-600">
+        <div className="rounded-xl bg-gradient-to-r from-slate-100 to-gray-100 p-5 border border-gray-200 dark:from-gray-800 dark:to-gray-800 dark:border-gray-700">
           <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2 dark:text-white">
             <span className="h-2 w-2 rounded-full bg-blue-500" />
             Conclusion
@@ -141,31 +141,31 @@ function BulletSection({
 }) {
   const colors = {
     green: {
-      bg: 'bg-green-50 dark:bg-green-900/20',
-      border: 'border-green-200 dark:border-green-800',
+      bg: 'bg-green-50 dark:bg-gray-800',
+      border: 'border-green-200 dark:border-green-700',
       iconBg: 'bg-gradient-to-br from-green-400 to-emerald-500',
-      bullet: 'bg-green-500',
+      bullet: 'bg-green-500 dark:bg-green-400',
       shadow: 'shadow-green-500/25',
     },
     red: {
-      bg: 'bg-red-50 dark:bg-red-900/20',
-      border: 'border-red-200 dark:border-red-800',
+      bg: 'bg-red-50 dark:bg-gray-800',
+      border: 'border-red-200 dark:border-red-700',
       iconBg: 'bg-gradient-to-br from-red-400 to-rose-500',
-      bullet: 'bg-red-500',
+      bullet: 'bg-red-500 dark:bg-red-400',
       shadow: 'shadow-red-500/25',
     },
     amber: {
-      bg: 'bg-amber-50 dark:bg-amber-900/20',
-      border: 'border-amber-200 dark:border-amber-800',
+      bg: 'bg-amber-50 dark:bg-gray-800',
+      border: 'border-amber-200 dark:border-amber-700',
       iconBg: 'bg-gradient-to-br from-amber-400 to-orange-500',
-      bullet: 'bg-amber-500',
+      bullet: 'bg-amber-500 dark:bg-amber-400',
       shadow: 'shadow-amber-500/25',
     },
     blue: {
-      bg: 'bg-blue-50 dark:bg-blue-900/20',
-      border: 'border-blue-200 dark:border-blue-800',
+      bg: 'bg-blue-50 dark:bg-gray-800',
+      border: 'border-blue-200 dark:border-blue-700',
       iconBg: 'bg-gradient-to-br from-blue-400 to-indigo-500',
-      bullet: 'bg-blue-500',
+      bullet: 'bg-blue-500 dark:bg-blue-400',
       shadow: 'shadow-blue-500/25',
     },
   };
