@@ -14,18 +14,24 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isGuest: boolean;
   login: () => void;
+  loginAsGuest: () => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const TOKEN_KEY = 'investiq_token';
+const GUEST_KEY = 'investiq_guest';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(() => {
     return localStorage.getItem(TOKEN_KEY);
+  });
+  const [isGuest, setIsGuest] = useState<boolean>(() => {
+    return localStorage.getItem(GUEST_KEY) === 'true';
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -49,6 +55,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Fetch user info when token exists
   useEffect(() => {
     async function fetchUser() {
+      // If guest mode is active, skip token check
+      if (isGuest) {
+        setIsLoading(false);
+        return;
+      }
+
       if (!token) {
         setIsLoading(false);
         return;
@@ -68,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     fetchUser();
-  }, [token]);
+  }, [token, isGuest]);
 
   // Handle OAuth callback - check for token in URL
   useEffect(() => {
@@ -96,18 +108,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loginAsGuest = useCallback(() => {
+    localStorage.setItem(GUEST_KEY, 'true');
+    setIsGuest(true);
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(GUEST_KEY);
     setToken(null);
     setUser(null);
+    setIsGuest(false);
   }, []);
 
   const value: AuthContextType = {
     user,
     token,
     isLoading,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user || isGuest,
+    isGuest,
     login,
+    loginAsGuest,
     logout,
   };
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Moon, Sun, TrendingUp, Sparkles, BarChart3, Newspaper, Brain } from 'lucide-react';
 import { useStockQuote, useBrief, useGenerateBrief } from './hooks/useStock';
 import { useTheme } from './hooks/useTheme';
+import { useAuth } from './contexts/AuthContext';
 import { StockSearch } from './components/stock/StockSearch';
 import { StockQuoteCard } from './components/stock/StockQuoteCard';
 import { BriefDisplay } from './components/brief/BriefDisplay';
@@ -12,10 +13,32 @@ import { EarningsChart, FinancialRatiosPanel } from './components/financial';
 import { LoadingSpinner } from './components/shared/LoadingSpinner';
 import { ErrorMessage } from './components/shared/ErrorMessage';
 import { UserMenu } from './components/auth/UserMenu';
+import { LoginPage } from './components/auth/LoginPage';
 
 type Tab = 'overview' | 'financials' | 'news' | 'brief';
 
 function App() {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
+
+  // Show loading while checking auth state
+  if (isAuthLoading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <LoadingSpinner size="lg" message="Loading..." />
+      </div>
+    );
+  }
+
+  // Show login page if not authenticated
+  if (!isAuthenticated) {
+    return <LoginPage />;
+  }
+
+  // Show main dashboard
+  return <Dashboard />;
+}
+
+function Dashboard() {
   const [ticker, setTicker] = useState('');
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const { toggleTheme, isDark } = useTheme();
