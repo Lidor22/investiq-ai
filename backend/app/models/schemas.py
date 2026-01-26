@@ -292,6 +292,9 @@ class QuarterlyEarning(BaseModel):
     quarter: str
     revenue: float | None = None
     earnings: float | None = None
+    estimate: float | None = None
+    surprise: float | None = None
+    surprise_percent: float | None = None
 
 
 class AnnualEarning(BaseModel):
@@ -300,6 +303,7 @@ class AnnualEarning(BaseModel):
     year: str
     revenue: float | None = None
     earnings: float | None = None
+    estimate: float | None = None
 
 
 class EarningsData(BaseModel):
