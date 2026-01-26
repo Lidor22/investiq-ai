@@ -2,8 +2,38 @@
 
 from datetime import datetime, timedelta
 from typing import Any
+import logging
+
+import yfinance as yf
+import httpx
 
 from app.services.finnhub_client import finnhub_client
+
+logger = logging.getLogger(__name__)
+
+
+async def _get_price_history_yfinance(ticker: str, period: str, interval: str) -> dict[str, Any]:
+    """Fallback to yfinance for historical price data."""
+    try:
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period=period, interval=interval)
+
+        if hist.empty:
+            return {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
+
+        dates = [d.strftime("%Y-%m-%d") for d in hist.index]
+
+        return {
+            "dates": dates,
+            "open": [round(p, 2) for p in hist["Open"].tolist()],
+            "high": [round(p, 2) for p in hist["High"].tolist()],
+            "low": [round(p, 2) for p in hist["Low"].tolist()],
+            "close": [round(p, 2) for p in hist["Close"].tolist()],
+            "volume": [int(v) for v in hist["Volume"].tolist()],
+        }
+    except Exception as e:
+        logger.warning(f"yfinance fallback failed for {ticker}: {e}")
+        return {"dates": [], "open": [], "high": [], "low": [], "close": [], "volume": []}
 
 
 async def get_price_history(
@@ -45,22 +75,33 @@ async def get_price_history(
     to_ts = int(datetime.now().timestamp())
     from_ts = int((datetime.now() - timedelta(days=days)).timestamp())
 
-    candles = await finnhub_client.get_candles(ticker, resolution, from_ts, to_ts)
+    # Try Finnhub first
+    try:
+        candles = await finnhub_client.get_candles(ticker, resolution, from_ts, to_ts)
 
-    if candles.get("s") != "ok" or not candles.get("t"):
-        return {"dates": [], "prices": [], "volumes": []}
+        if candles.get("s") == "ok" and candles.get("t"):
+            # Convert timestamps to dates
+            dates = [datetime.fromtimestamp(ts).strftime("%Y-%m-%d") for ts in candles["t"]]
 
-    # Convert timestamps to dates
-    dates = [datetime.fromtimestamp(ts).strftime("%Y-%m-%d") for ts in candles["t"]]
+            return {
+                "dates": dates,
+                "open": [round(p, 2) for p in candles.get("o", [])],
+                "high": [round(p, 2) for p in candles.get("h", [])],
+                "low": [round(p, 2) for p in candles.get("l", [])],
+                "close": [round(p, 2) for p in candles.get("c", [])],
+                "volume": candles.get("v", []),
+            }
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 403:
+            logger.info(f"Finnhub candle endpoint returned 403 for {ticker}, falling back to yfinance")
+        else:
+            logger.warning(f"Finnhub candle request failed for {ticker}: {e}")
+    except Exception as e:
+        logger.warning(f"Finnhub candle request failed for {ticker}: {e}")
 
-    return {
-        "dates": dates,
-        "open": [round(p, 2) for p in candles.get("o", [])],
-        "high": [round(p, 2) for p in candles.get("h", [])],
-        "low": [round(p, 2) for p in candles.get("l", [])],
-        "close": [round(p, 2) for p in candles.get("c", [])],
-        "volume": candles.get("v", []),
-    }
+    # Fallback to yfinance
+    logger.info(f"Using yfinance fallback for {ticker} price history")
+    return await _get_price_history_yfinance(ticker, period, interval)
 
 
 def _calculate_sma(prices: list[float], period: int) -> float | None:
@@ -103,24 +144,58 @@ def _calculate_rsi(prices: list[float], period: int = 14) -> float | None:
     return 100 - (100 / (1 + rs))
 
 
+async def _get_candle_data_for_indicators(ticker: str) -> dict[str, Any] | None:
+    """Get candle data for technical indicators, with yfinance fallback."""
+    # Get 1 year of daily data for calculations
+    to_ts = int(datetime.now().timestamp())
+    from_ts = int((datetime.now() - timedelta(days=365)).timestamp())
+
+    # Try Finnhub first
+    try:
+        candles = await finnhub_client.get_candles(ticker, "D", from_ts, to_ts)
+        if candles.get("s") == "ok" and candles.get("c") and len(candles["c"]) >= 50:
+            return {"c": candles["c"], "h": candles["h"], "l": candles["l"]}
+    except httpx.HTTPStatusError as e:
+        if e.response.status_code == 403:
+            logger.info(f"Finnhub candle endpoint returned 403 for {ticker}, falling back to yfinance")
+        else:
+            logger.warning(f"Finnhub candle request failed for {ticker}: {e}")
+    except Exception as e:
+        logger.warning(f"Finnhub candle request failed for {ticker}: {e}")
+
+    # Fallback to yfinance
+    try:
+        logger.info(f"Using yfinance fallback for {ticker} indicator data")
+        stock = yf.Ticker(ticker)
+        hist = stock.history(period="1y", interval="1d")
+
+        if hist.empty or len(hist) < 50:
+            return None
+
+        return {
+            "c": hist["Close"].tolist(),
+            "h": hist["High"].tolist(),
+            "l": hist["Low"].tolist(),
+        }
+    except Exception as e:
+        logger.warning(f"yfinance fallback failed for {ticker}: {e}")
+        return None
+
+
 async def calculate_technical_indicators(ticker: str) -> dict[str, Any]:
     """
     Calculate technical indicators for a stock.
 
     Returns moving averages, RSI, MACD, and support/resistance levels.
     """
-    # Get 1 year of daily data for calculations
-    to_ts = int(datetime.now().timestamp())
-    from_ts = int((datetime.now() - timedelta(days=365)).timestamp())
+    candle_data = await _get_candle_data_for_indicators(ticker)
 
-    candles = await finnhub_client.get_candles(ticker, "D", from_ts, to_ts)
-
-    if candles.get("s") != "ok" or not candles.get("c") or len(candles["c"]) < 50:
+    if not candle_data:
         return {}
 
-    close = candles["c"]
-    high = candles["h"]
-    low = candles["l"]
+    close = candle_data["c"]
+    high = candle_data["h"]
+    low = candle_data["l"]
 
     # Moving Averages
     sma_20 = _calculate_sma(close, 20)
