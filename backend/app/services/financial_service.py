@@ -1,13 +1,19 @@
 """Financial data service for earnings, metrics, and ratios using Finnhub."""
 
+import logging
 from typing import Any
 
+import yfinance as yf
+
 from app.services.finnhub_client import finnhub_client
+
+logger = logging.getLogger(__name__)
 
 
 async def get_earnings_data(ticker: str) -> dict[str, Any]:
     """
     Get earnings history and estimates for a ticker.
+    Uses Finnhub for EPS data and yfinance for revenue data.
     """
     result = {
         "quarterly_earnings": [],
@@ -16,18 +22,77 @@ async def get_earnings_data(ticker: str) -> dict[str, Any]:
         "earnings_history": [],
     }
 
+    # Get quarterly revenue from yfinance
+    quarterly_revenue = {}
+    annual_revenue = {}
     try:
-        # Get earnings from Finnhub
+        stock = yf.Ticker(ticker)
+
+        # Get quarterly financials for revenue
+        quarterly_financials = stock.quarterly_financials
+        if quarterly_financials is not None and not quarterly_financials.empty:
+            if 'Total Revenue' in quarterly_financials.index:
+                for date_col in quarterly_financials.columns:
+                    quarter_key = date_col.strftime("%Y-%m")
+                    revenue = quarterly_financials.loc['Total Revenue', date_col]
+                    if revenue and not (hasattr(revenue, 'isna') and revenue.isna()):
+                        quarterly_revenue[quarter_key] = float(revenue)
+
+        # Get annual financials for revenue
+        annual_financials = stock.financials
+        if annual_financials is not None and not annual_financials.empty:
+            if 'Total Revenue' in annual_financials.index:
+                for date_col in annual_financials.columns:
+                    year_key = str(date_col.year)
+                    revenue = annual_financials.loc['Total Revenue', date_col]
+                    if revenue and not (hasattr(revenue, 'isna') and revenue.isna()):
+                        annual_revenue[year_key] = float(revenue)
+
+        # Get annual EPS from yfinance earnings data
+        earnings_annual = stock.earnings
+        if earnings_annual is not None and not earnings_annual.empty:
+            for year_idx in earnings_annual.index:
+                year_str = str(year_idx)
+                eps = None
+                if 'Earnings' in earnings_annual.columns:
+                    eps_val = earnings_annual.loc[year_idx, 'Earnings']
+                    if eps_val and not (hasattr(eps_val, 'isna') and eps_val.isna()):
+                        eps = float(eps_val)
+
+                rev = annual_revenue.get(year_str)
+
+                result["annual_earnings"].append({
+                    "year": year_str,
+                    "revenue": rev,
+                    "earnings": eps,
+                    "actual": eps,
+                    "estimate": None,
+                })
+
+            # Sort by year descending
+            result["annual_earnings"].sort(key=lambda x: x["year"], reverse=True)
+
+    except Exception as e:
+        logger.warning(f"yfinance revenue data failed for {ticker}: {e}")
+
+    try:
+        # Get earnings from Finnhub (EPS data)
         earnings = await finnhub_client.get_earnings(ticker)
 
         if earnings:
             # Process earnings history
             for e in earnings[:8]:  # Last 8 quarters
+                period = e.get("period", "")
+                quarter_key = period[:7] if period else ""  # YYYY-MM format
+
+                # Try to find matching revenue
+                revenue = quarterly_revenue.get(quarter_key)
+
                 result["quarterly_earnings"].append({
-                    "quarter": e.get("period", ""),
-                    "revenue": None,  # Finnhub earnings endpoint doesn't include revenue
-                    "earnings": e.get("actual"),
-                    "estimate": e.get("estimate"),
+                    "quarter": period,
+                    "revenue": revenue,
+                    "earnings": e.get("actual"),  # Actual EPS
+                    "estimate": e.get("estimate"),  # Estimated EPS
                     "surprise": e.get("surprise"),
                     "surprise_percent": e.get("surprisePercent"),
                 })
@@ -44,8 +109,8 @@ async def get_earnings_data(ticker: str) -> dict[str, Any]:
             "revenue_growth": metrics.get("revenueGrowthTTMYoy"),
         }
 
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"Finnhub earnings data failed for {ticker}: {e}")
 
     return result
 

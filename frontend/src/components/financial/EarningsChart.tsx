@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   BarChart,
   Bar,
@@ -8,8 +8,10 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  ComposedChart,
+  Line,
 } from 'recharts';
-import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import { useEarnings } from '../../hooks/useFinancial';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 
@@ -18,13 +20,40 @@ interface EarningsChartProps {
 }
 
 type View = 'quarterly' | 'annual';
+type ChartType = 'eps' | 'revenue';
+
+// Format large numbers to billions/millions
+function formatRevenue(value: number): string {
+  if (value >= 1e12) return `$${(value / 1e12).toFixed(1)}T`;
+  if (value >= 1e9) return `$${(value / 1e9).toFixed(1)}B`;
+  if (value >= 1e6) return `$${(value / 1e6).toFixed(1)}M`;
+  return `$${value.toFixed(0)}`;
+}
 
 export function EarningsChart({ ticker }: EarningsChartProps) {
   const [view, setView] = useState<View>('quarterly');
+  const [chartType, setChartType] = useState<ChartType>('eps');
   const { data, isLoading, error } = useEarnings(ticker);
 
   // Check for dark mode
   const isDark = document.documentElement.classList.contains('dark');
+
+  // Check if annual data is available
+  const hasAnnualData = useMemo(() => {
+    if (!data) return false;
+    return data.annual_earnings.length > 0 &&
+      data.annual_earnings.some(a => (a.earnings ?? a.actual) !== null || a.revenue !== null);
+  }, [data]);
+
+  // Check if revenue data is available
+  const hasRevenueData = useMemo(() => {
+    if (!data) return false;
+    if (view === 'quarterly') {
+      return data.quarterly_earnings.some(q => q.revenue !== null);
+    } else {
+      return data.annual_earnings.some(a => a.revenue !== null);
+    }
+  }, [data, view]);
 
   if (isLoading) {
     return (
@@ -47,24 +76,27 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
     );
   }
 
-  // Finnhub returns EPS data (actual, estimate) not revenue/earnings
+  // Prepare chart data
   const chartData = view === 'quarterly'
     ? data.quarterly_earnings.map((q) => ({
         period: q.quarter ? q.quarter.substring(0, 7) : 'N/A', // YYYY-MM format
-        actual: q.earnings ?? q.actual ?? null, // EPS actual (earnings field holds actual EPS)
-        estimate: q.estimate ?? null, // EPS estimate
+        actual: q.earnings ?? q.actual ?? null,
+        estimate: q.estimate ?? null,
+        revenue: q.revenue ?? null,
         surprise: q.surprise ?? null,
         surprisePercent: q.surprise_percent ?? null,
-      })).reverse() // Show oldest to newest
+      })).reverse()
     : data.annual_earnings.map((a) => ({
         period: a.year,
         actual: a.earnings ?? a.actual ?? null,
         estimate: a.estimate ?? null,
+        revenue: a.revenue ?? null,
         surprise: null,
         surprisePercent: null,
       }));
 
-  const hasData = chartData.length > 0 && chartData.some((d) => d.actual !== null || d.estimate !== null);
+  const hasEpsData = chartData.length > 0 && chartData.some((d) => d.actual !== null || d.estimate !== null);
+  const hasData = hasEpsData || (hasRevenueData && chartData.some(d => d.revenue !== null));
 
   // Theme-aware colors
   const gridColor = isDark ? '#374151' : '#f0f0f0';
@@ -84,30 +116,62 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white">Earnings</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">EPS Actual vs Estimate</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {chartType === 'eps' ? 'EPS Actual vs Estimate' : 'Quarterly Revenue'}
+            </p>
           </div>
         </div>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1 dark:bg-gray-700">
-          <button
-            onClick={() => setView('quarterly')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              view === 'quarterly'
-                ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
-                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-            }`}
-          >
-            Quarterly
-          </button>
-          <button
-            onClick={() => setView('annual')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              view === 'annual'
-                ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
-                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
-            }`}
-          >
-            Annual
-          </button>
+        <div className="flex items-center gap-2">
+          {/* Chart type toggle - only show if revenue data available */}
+          {hasRevenueData && (
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1 dark:bg-gray-700 mr-2">
+              <button
+                onClick={() => setChartType('eps')}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  chartType === 'eps'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                EPS
+              </button>
+              <button
+                onClick={() => setChartType('revenue')}
+                className={`px-2.5 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  chartType === 'revenue'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                Revenue
+              </button>
+            </div>
+          )}
+          {/* Period toggle - only show Annual if data available */}
+          <div className="flex gap-1 bg-gray-100 rounded-lg p-1 dark:bg-gray-700">
+            <button
+              onClick={() => setView('quarterly')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                view === 'quarterly'
+                  ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+                  : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+              }`}
+            >
+              Quarterly
+            </button>
+            {hasAnnualData && (
+              <button
+                onClick={() => setView('annual')}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                  view === 'annual'
+                    ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-600 dark:text-white'
+                    : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                }`}
+              >
+                Annual
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -115,47 +179,90 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
         {hasData ? (
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                <XAxis
-                  dataKey="period"
-                  tick={{ fontSize: 11, fill: textColor }}
-                  interval={0}
-                  angle={-45}
-                  textAnchor="end"
-                  height={60}
-                  axisLine={{ stroke: gridColor }}
-                  tickLine={{ stroke: gridColor }}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: textColor }}
-                  tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
-                  width={55}
-                  axisLine={{ stroke: gridColor }}
-                  tickLine={{ stroke: gridColor }}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: tooltipBg,
-                    border: `1px solid ${tooltipBorder}`,
-                    borderRadius: '12px',
-                    fontSize: '12px',
-                    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
-                  }}
-                  formatter={(value, name) => {
-                    if (value === null || value === undefined) return ['N/A', name];
-                    return [`$${Number(value).toFixed(2)}`, name];
-                  }}
-                  labelStyle={{ color: isDark ? '#f3f4f6' : '#111827', fontWeight: 600, marginBottom: 4 }}
-                  itemStyle={{ color: isDark ? '#d1d5db' : '#4b5563' }}
-                />
-                <Legend
-                  wrapperStyle={{ paddingTop: '20px' }}
-                  formatter={(value) => <span style={{ color: textColor, fontSize: '12px' }}>{value}</span>}
-                />
-                <Bar dataKey="actual" name="Actual EPS" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="estimate" name="Estimated EPS" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              </BarChart>
+              {chartType === 'eps' ? (
+                <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                  <XAxis
+                    dataKey="period"
+                    tick={{ fontSize: 11, fill: textColor }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    axisLine={{ stroke: gridColor }}
+                    tickLine={{ stroke: gridColor }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: textColor }}
+                    tickFormatter={(value) => `$${Number(value).toFixed(2)}`}
+                    width={55}
+                    axisLine={{ stroke: gridColor }}
+                    tickLine={{ stroke: gridColor }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: tooltipBg,
+                      border: `1px solid ${tooltipBorder}`,
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                    }}
+                    formatter={(value, name) => {
+                      if (value === null || value === undefined) return ['N/A', name];
+                      return [`$${Number(value).toFixed(2)}`, name];
+                    }}
+                    labelStyle={{ color: isDark ? '#f3f4f6' : '#111827', fontWeight: 600, marginBottom: 4 }}
+                    itemStyle={{ color: isDark ? '#d1d5db' : '#4b5563' }}
+                  />
+                  <Legend
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    formatter={(value) => <span style={{ color: textColor, fontSize: '12px' }}>{value}</span>}
+                  />
+                  <Bar dataKey="actual" name="Actual EPS" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="estimate" name="Estimated EPS" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              ) : (
+                <ComposedChart data={chartData} margin={{ top: 5, right: 5, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                  <XAxis
+                    dataKey="period"
+                    tick={{ fontSize: 11, fill: textColor }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={60}
+                    axisLine={{ stroke: gridColor }}
+                    tickLine={{ stroke: gridColor }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: textColor }}
+                    tickFormatter={(value) => formatRevenue(Number(value))}
+                    width={65}
+                    axisLine={{ stroke: gridColor }}
+                    tickLine={{ stroke: gridColor }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: tooltipBg,
+                      border: `1px solid ${tooltipBorder}`,
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+                    }}
+                    formatter={(value, name) => {
+                      if (value === null || value === undefined) return ['N/A', name];
+                      return [formatRevenue(Number(value)), name];
+                    }}
+                    labelStyle={{ color: isDark ? '#f3f4f6' : '#111827', fontWeight: 600, marginBottom: 4 }}
+                    itemStyle={{ color: isDark ? '#d1d5db' : '#4b5563' }}
+                  />
+                  <Legend
+                    wrapperStyle={{ paddingTop: '20px' }}
+                    formatter={(value) => <span style={{ color: textColor, fontSize: '12px' }}>{value}</span>}
+                  />
+                  <Bar dataKey="revenue" name="Revenue" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </ComposedChart>
+              )}
             </ResponsiveContainer>
           </div>
         ) : (

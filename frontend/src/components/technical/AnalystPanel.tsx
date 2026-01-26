@@ -1,4 +1,4 @@
-import { Target, Users, TrendingUp, TrendingDown } from 'lucide-react';
+import { Target, Users, TrendingUp, TrendingDown, ThumbsUp, MinusCircle, ThumbsDown } from 'lucide-react';
 import { useAnalystData } from '../../hooks/useTechnical';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 
@@ -47,6 +47,25 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
     ? recommendationDisplay[price_targets.recommendation] || { label: price_targets.recommendation, color: 'text-gray-600 dark:text-gray-400', bg: 'bg-gray-50', darkBg: 'dark:bg-gray-700' }
     : null;
 
+  // Extract recommendation breakdown from the latest consensus
+  const latestRec = hasRecommendations ? data.recommendations[0] : null;
+  // Parse "Buy: X, Hold: Y, Sell: Z" format if present
+  const parseRecommendationBreakdown = () => {
+    if (!latestRec) return null;
+    const match = latestRec.to_grade.match(/Buy:\s*(\d+),\s*Hold:\s*(\d+),\s*Sell:\s*(\d+)/);
+    if (match) {
+      return {
+        buy: parseInt(match[1], 10),
+        hold: parseInt(match[2], 10),
+        sell: parseInt(match[3], 10),
+      };
+    }
+    return null;
+  };
+
+  const breakdown = parseRecommendationBreakdown();
+  const totalAnalysts = breakdown ? breakdown.buy + breakdown.hold + breakdown.sell : price_targets.number_of_analysts;
+
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:border-gray-700 dark:bg-gray-800">
       {/* Header */}
@@ -63,6 +82,45 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Recommendation Breakdown - Show when we have consensus data */}
+        {breakdown && (
+          <div>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 dark:text-gray-400">Analyst Consensus</h4>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-xl p-3 text-center dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-800">
+                <ThumbsUp className="h-5 w-5 text-green-600 dark:text-green-400 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{breakdown.buy}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Buy</p>
+              </div>
+              <div className="bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200 rounded-xl p-3 text-center dark:from-yellow-900/20 dark:to-amber-900/20 dark:border-yellow-800">
+                <MinusCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{breakdown.hold}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Hold</p>
+              </div>
+              <div className="bg-gradient-to-br from-red-50 to-rose-50 border border-red-200 rounded-xl p-3 text-center dark:from-red-900/20 dark:to-rose-900/20 dark:border-red-800">
+                <ThumbsDown className="h-5 w-5 text-red-600 dark:text-red-400 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{breakdown.sell}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Sell</p>
+              </div>
+            </div>
+            {/* Visual bar showing distribution */}
+            <div className="mt-3 h-2 flex rounded-full overflow-hidden">
+              <div
+                className="bg-green-500"
+                style={{ width: `${(breakdown.buy / (breakdown.buy + breakdown.hold + breakdown.sell)) * 100}%` }}
+              />
+              <div
+                className="bg-yellow-500"
+                style={{ width: `${(breakdown.hold / (breakdown.buy + breakdown.hold + breakdown.sell)) * 100}%` }}
+              />
+              <div
+                className="bg-red-500"
+                style={{ width: `${(breakdown.sell / (breakdown.buy + breakdown.hold + breakdown.sell)) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {hasTargets && (
           <>
             {/* Price Target Range */}
@@ -132,17 +190,17 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
                 </p>
               </div>
             )}
-
-            {/* Analyst Count */}
-            {price_targets.number_of_analysts && (
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-500 py-2 dark:text-gray-400">
-                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
-                  <Users className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-                </div>
-                <span>Based on {price_targets.number_of_analysts} analyst{price_targets.number_of_analysts > 1 ? 's' : ''}</span>
-              </div>
-            )}
           </>
+        )}
+
+        {/* Analyst Count - Show regardless of hasTargets if we have recommendation data */}
+        {totalAnalysts && totalAnalysts > 0 && (
+          <div className="flex items-center justify-center gap-2 text-sm text-gray-500 py-2 dark:text-gray-400">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700">
+              <Users className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+            </div>
+            <span>Based on {totalAnalysts} analyst{totalAnalysts > 1 ? 's' : ''}</span>
+          </div>
         )}
 
         {/* Show "no data" only when there's neither price targets nor recommendations */}
@@ -153,20 +211,36 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
           </div>
         )}
 
-        {/* Recent Recommendations */}
-        {hasRecommendations && (
+        {/* Historical Trend - Show summarized history */}
+        {hasRecommendations && data.recommendations.length > 1 && (
           <div>
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2.5 dark:text-gray-400">Recent Ratings</h4>
-            <div className="space-y-1.5 max-h-36 overflow-y-auto">
-              {data.recommendations.slice(0, 5).map((rec, i) => (
-                <div key={i} className="flex items-center justify-between text-sm py-2 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                  <span className="text-gray-600 truncate max-w-[120px] dark:text-gray-400">{rec.firm}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-900 dark:text-white">{rec.to_grade}</span>
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{new Date(rec.date).toLocaleDateString()}</span>
+            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2.5 dark:text-gray-400">Rating History</h4>
+            <div className="space-y-1.5 max-h-24 overflow-y-auto">
+              {data.recommendations.slice(1, 4).map((rec, i) => {
+                const dateStr = new Date(rec.date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                const recMatch = rec.to_grade.match(/Buy:\s*(\d+),\s*Hold:\s*(\d+),\s*Sell:\s*(\d+)/);
+                if (recMatch) {
+                  const buy = parseInt(recMatch[1], 10);
+                  const hold = parseInt(recMatch[2], 10);
+                  const sell = parseInt(recMatch[3], 10);
+                  return (
+                    <div key={i} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                      <span className="text-gray-500 dark:text-gray-400">{dateStr}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="text-green-600 dark:text-green-400">{buy} Buy</span>
+                        <span className="text-yellow-600 dark:text-yellow-400">{hold} Hold</span>
+                        <span className="text-red-600 dark:text-red-400">{sell} Sell</span>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div key={i} className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                    <span className="text-gray-500 dark:text-gray-400">{dateStr}</span>
+                    <span className="text-gray-700 dark:text-gray-300">{rec.to_grade}</span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
