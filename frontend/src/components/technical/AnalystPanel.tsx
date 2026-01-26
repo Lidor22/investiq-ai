@@ -171,7 +171,7 @@ export function AnalystPanel({ ticker }: AnalystPanelProps) {
             </div>
 
             {/* Upside/Downside */}
-            {price_targets.upside_potential !== null && (
+            {price_targets.upside_potential != null && (
               <div className={`rounded-xl p-4 text-center border ${
                 price_targets.upside_potential >= 0
                   ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-800'

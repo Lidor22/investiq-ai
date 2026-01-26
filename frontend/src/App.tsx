@@ -232,11 +232,11 @@ function Dashboard() {
                       <div className={`rounded-xl border ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'} p-6 shadow-sm card-hover`}>
                         <h3 className={`font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>Company Summary</h3>
                         <p className={isDark ? 'text-gray-300' : 'text-gray-600'}>
-                          {quote.name} ({quote.ticker}) is currently trading at ${quote.price.toFixed(2)}.
-                          {quote.market_cap && (
+                          {quote.name} ({quote.ticker}) is currently trading at ${quote.price?.toFixed(2) ?? 'N/A'}.
+                          {quote.market_cap != null && (
                             <> Market cap: ${(quote.market_cap / 1e9).toFixed(2)}B.</>
                           )}
-                          {quote.pe_ratio && (
+                          {quote.pe_ratio != null && (
                             <> P/E ratio: {quote.pe_ratio.toFixed(2)}.</>
                           )}
                         </p>
