@@ -49,7 +49,8 @@ class AuthService:
 
         if user:
             # Update last login and any changed profile data
-            user.last_login = datetime.now(timezone.utc)
+            # Use naive UTC datetime to match TIMESTAMP WITHOUT TIME ZONE column
+            user.last_login = datetime.utcnow()
             if name:
                 user.name = name
             if picture:
