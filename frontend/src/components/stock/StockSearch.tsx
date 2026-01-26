@@ -124,12 +124,12 @@ export function StockSearch({ onSearch, isLoading }: StockSearchProps) {
             className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pl-11 pr-24 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-500"
             disabled={isLoading}
           />
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 dark:text-gray-500" />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
               type="button"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="p-1.5 text-gray-400 hover:text-gray-600"
+              className="p-1.5 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
             >
               <ChevronDown className={`h-4 w-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -180,7 +180,7 @@ export function StockSearch({ onSearch, isLoading }: StockSearchProps) {
             <div className="py-2">
               {Object.entries(POPULAR_STOCKS).map(([category, stocks]) => (
                 <div key={category}>
-                  <div className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 dark:text-gray-500">
+                  <div className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                     {category}
                   </div>
                   {stocks.map((stock) => (
