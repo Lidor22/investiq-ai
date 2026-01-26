@@ -107,6 +107,7 @@ async def get_earnings_data(ticker: str) -> dict[str, Any]:
             "peg_ratio": metrics.get("pegRatio"),
             "earnings_growth": metrics.get("epsGrowthTTMYoy"),
             "revenue_growth": metrics.get("revenueGrowthTTMYoy"),
+            "revenue_ttm": metrics.get("revenueTTM"),  # TTM Revenue in actual dollars
         }
 
     except Exception as e:

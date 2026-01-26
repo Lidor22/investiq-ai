@@ -33,7 +33,7 @@ export function RefreshButton({ ticker, className = '' }: RefreshButtonProps) {
     <button
       onClick={handleRefresh}
       disabled={isRefreshing}
-      className={`p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors disabled:opacity-50 ${className}`}
+      className={`p-2 rounded-lg border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors disabled:opacity-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 dark:hover:text-white ${className}`}
       title="Refresh data"
     >
       <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />

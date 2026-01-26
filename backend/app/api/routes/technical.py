@@ -53,8 +53,8 @@ async def get_technical_indicators(ticker: str):
 @router.get("/{ticker}/history", response_model=PriceHistory)
 async def get_historical_prices(
     ticker: str,
-    period: str = Query("6mo", pattern="^(1mo|3mo|6mo|1y|2y|5y)$"),
-    interval: str = Query("1d", pattern="^(1d|1wk|1mo)$"),
+    period: str = Query("6mo", pattern="^(1d|5d|1mo|3mo|6mo|1y|2y|5y)$"),
+    interval: str = Query("1d", pattern="^(5m|15m|1h|1d|1wk|1mo)$"),
 ):
     """
     Get historical price data for charts.

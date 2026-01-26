@@ -275,9 +275,9 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
         {data.earnings_estimate && (
           <div className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-700">
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 dark:text-gray-400">
-              Earnings Estimates
+              Earnings & Revenue Estimates
             </h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <MetricBox
                 label="Current EPS"
                 value={data.earnings_estimate.current_eps}
@@ -287,6 +287,11 @@ export function EarningsChart({ ticker }: EarningsChartProps) {
                 label="Forward EPS"
                 value={data.earnings_estimate.forward_eps}
                 format="currency"
+              />
+              <MetricBox
+                label="Revenue (TTM)"
+                value={data.earnings_estimate.revenue_ttm}
+                format="revenue"
               />
               <MetricBox
                 label="Earnings Growth"
@@ -313,7 +318,7 @@ function MetricBox({
 }: {
   label: string;
   value: number | null;
-  format: 'currency' | 'percent' | 'number';
+  format: 'currency' | 'percent' | 'number' | 'revenue';
 }) {
   let displayValue = 'N/A';
   let colorClass = 'text-gray-700 dark:text-gray-300';
@@ -322,6 +327,17 @@ function MetricBox({
   if (value !== null) {
     if (format === 'currency') {
       displayValue = `$${value.toFixed(2)}`;
+    } else if (format === 'revenue') {
+      // Format revenue in actual dollars (Finnhub revenueTTM is in actual dollars, not millions)
+      if (value >= 1e12) {
+        displayValue = `$${(value / 1e12).toFixed(1)}T`;
+      } else if (value >= 1e9) {
+        displayValue = `$${(value / 1e9).toFixed(1)}B`;
+      } else if (value >= 1e6) {
+        displayValue = `$${(value / 1e6).toFixed(1)}M`;
+      } else {
+        displayValue = `$${value.toFixed(0)}`;
+      }
     } else if (format === 'percent') {
       // Finnhub returns percentages as whole numbers (e.g., 26.92 for 26.92%)
       displayValue = `${value.toFixed(1)}%`;

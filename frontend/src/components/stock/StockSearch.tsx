@@ -121,7 +121,7 @@ export function StockSearch({ onSearch, isLoading }: StockSearchProps) {
             onChange={(e) => setTicker(e.target.value.toUpperCase())}
             onFocus={() => setIsDropdownOpen(true)}
             placeholder="Search stocks..."
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pl-11 pr-24 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 pl-11 pr-24 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-500"
             disabled={isLoading}
           />
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
@@ -146,11 +146,11 @@ export function StockSearch({ onSearch, isLoading }: StockSearchProps) {
 
       {/* Dropdown */}
       {isDropdownOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 max-h-80 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg z-50 dark:border-gray-600 dark:bg-gray-800">
           {ticker.trim() ? (
             // Show search results
             isSearching ? (
-              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-gray-500">
+              <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-gray-500 dark:text-gray-400">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Searching...
               </div>
@@ -160,18 +160,18 @@ export function StockSearch({ onSearch, isLoading }: StockSearchProps) {
                   <button
                     key={stock.ticker}
                     onClick={() => handleSelect(stock.ticker)}
-                    className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-50"
+                    className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     <div>
-                      <span className="font-medium text-gray-900">{stock.ticker}</span>
-                      <span className="ml-2 text-sm text-gray-500">{stock.name}</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{stock.ticker}</span>
+                      <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{stock.name}</span>
                     </div>
-                    <span className="text-xs text-gray-400">{stock.exchange}</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500">{stock.exchange}</span>
                   </button>
                 ))}
               </div>
             ) : (
-              <div className="px-4 py-3 text-sm text-gray-500">
+              <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
                 No matches found. Press Enter to search for "{ticker}"
               </div>
             )
@@ -180,18 +180,18 @@ export function StockSearch({ onSearch, isLoading }: StockSearchProps) {
             <div className="py-2">
               {Object.entries(POPULAR_STOCKS).map(([category, stocks]) => (
                 <div key={category}>
-                  <div className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50">
+                  <div className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 dark:bg-gray-700 dark:text-gray-500">
                     {category}
                   </div>
                   {stocks.map((stock) => (
                     <button
                       key={stock.ticker}
                       onClick={() => handleSelect(stock.ticker)}
-                      className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-50"
+                      className="flex w-full items-center justify-between px-4 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700"
                     >
                       <div>
-                        <span className="font-medium text-gray-900">{stock.ticker}</span>
-                        <span className="ml-2 text-sm text-gray-500">{stock.name}</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{stock.ticker}</span>
+                        <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">{stock.name}</span>
                       </div>
                     </button>
                   ))}

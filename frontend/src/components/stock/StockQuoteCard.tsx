@@ -1,7 +1,9 @@
-import { TrendingUp, TrendingDown, Sparkles, Activity } from 'lucide-react';
+import { TrendingUp, TrendingDown, Sparkles, Activity, Star, Check, AlertCircle } from 'lucide-react';
 import type { StockQuote } from '../../types';
 import { ExportMenu } from '../shared/ExportMenu';
 import { RefreshButton } from '../shared/RefreshButton';
+import { useWatchlist, useAddToWatchlist } from '../../hooks/useWatchlist';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface StockQuoteCardProps {
   quote: StockQuote;
@@ -31,6 +33,18 @@ function formatVolume(num: number): string {
 
 export function StockQuoteCard({ quote, onGenerateBrief, isGeneratingBrief }: StockQuoteCardProps) {
   const isPositive = quote.change >= 0;
+  const { isAuthenticated } = useAuth();
+  const { data: watchlist } = useWatchlist();
+  const addToWatchlist = useAddToWatchlist();
+
+  const isInWatchlist = watchlist?.some((item) => item.ticker === quote.ticker);
+
+  const handleAddToWatchlist = () => {
+    if (!isInWatchlist) {
+      addToWatchlist.reset(); // Clear any previous error state
+      addToWatchlist.mutate({ ticker: quote.ticker });
+    }
+  };
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden card-hover dark:border-gray-700 dark:bg-gray-800">
@@ -67,6 +81,37 @@ export function StockQuoteCard({ quote, onGenerateBrief, isGeneratingBrief }: St
           </div>
 
           <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <button
+                onClick={handleAddToWatchlist}
+                disabled={isInWatchlist || addToWatchlist.isPending}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all ${
+                  addToWatchlist.isError
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : isInWatchlist
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                    : 'bg-gray-100 text-gray-700 hover:bg-amber-100 hover:text-amber-700 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-amber-900/30 dark:hover:text-amber-400'
+                }`}
+                title={addToWatchlist.isError ? 'Failed to add - click to retry' : isInWatchlist ? 'Already in watchlist' : 'Add to watchlist'}
+              >
+                {addToWatchlist.isError ? (
+                  <>
+                    <AlertCircle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Failed</span>
+                  </>
+                ) : isInWatchlist ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    <span className="hidden sm:inline">Watching</span>
+                  </>
+                ) : (
+                  <>
+                    <Star className={`h-4 w-4 ${addToWatchlist.isPending ? 'animate-pulse' : ''}`} />
+                    <span className="hidden sm:inline">Watch</span>
+                  </>
+                )}
+              </button>
+            )}
             <RefreshButton ticker={quote.ticker} />
             <ExportMenu ticker={quote.ticker} />
             {onGenerateBrief && (

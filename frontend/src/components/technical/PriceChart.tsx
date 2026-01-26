@@ -16,9 +16,11 @@ interface PriceChartProps {
   ticker: string;
 }
 
-type Period = '1mo' | '3mo' | '6mo' | '1y' | '2y';
+type Period = '1d' | '5d' | '1mo' | '3mo' | '6mo' | '1y' | '2y';
 
 const periodOptions: { value: Period; label: string }[] = [
+  { value: '1d', label: '1D' },
+  { value: '5d', label: '1W' },
   { value: '1mo', label: '1M' },
   { value: '3mo', label: '3M' },
   { value: '6mo', label: '6M' },
@@ -147,6 +149,11 @@ export function PriceChart({ ticker }: PriceChartProps) {
                 dataKey="date"
                 tick={{ fontSize: 11, fill: textColor }}
                 tickFormatter={(value) => {
+                  // Check if it's intraday data (has time component)
+                  if (value.includes(':')) {
+                    const date = new Date(value);
+                    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                  }
                   const date = new Date(value);
                   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 }}
@@ -172,12 +179,23 @@ export function PriceChart({ ticker }: PriceChartProps) {
                   boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
                 }}
                 formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Price']}
-                labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
+                labelFormatter={(label) => {
+                  const date = new Date(label);
+                  if (label.includes(':')) {
+                    return date.toLocaleString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    });
+                  }
+                  return date.toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  });
+                }}
                 labelStyle={{ color: isDark ? '#f3f4f6' : '#111827', fontWeight: 600, marginBottom: 4 }}
                 itemStyle={{ color: isDark ? '#d1d5db' : '#4b5563' }}
               />

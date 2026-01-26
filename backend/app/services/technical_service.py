@@ -54,6 +54,8 @@ async def get_price_history(
     """
     # Map period to days
     period_days = {
+        "1d": 1,
+        "5d": 5,
         "1mo": 30,
         "3mo": 90,
         "6mo": 180,
@@ -64,12 +66,23 @@ async def get_price_history(
     days = period_days.get(period, 180)
 
     # Map interval to Finnhub resolution
+    # For intraday periods (1d, 5d), use appropriate resolution
     resolution_map = {
+        "5m": "5",
+        "15m": "15",
+        "1h": "60",
         "1d": "D",
         "1wk": "W",
         "1mo": "M",
     }
-    resolution = resolution_map.get(interval, "D")
+
+    # Auto-select resolution for short periods
+    if period == "1d":
+        resolution = "5"  # 5-minute candles for 1 day
+    elif period == "5d":
+        resolution = "15"  # 15-minute candles for 5 days
+    else:
+        resolution = resolution_map.get(interval, "D")
 
     # Calculate timestamps
     to_ts = int(datetime.now().timestamp())
@@ -80,8 +93,11 @@ async def get_price_history(
         candles = await finnhub_client.get_candles(ticker, resolution, from_ts, to_ts)
 
         if candles.get("s") == "ok" and candles.get("t"):
-            # Convert timestamps to dates
-            dates = [datetime.fromtimestamp(ts).strftime("%Y-%m-%d") for ts in candles["t"]]
+            # Convert timestamps to dates (include time for intraday data)
+            if period in ("1d", "5d"):
+                dates = [datetime.fromtimestamp(ts).strftime("%Y-%m-%d %H:%M") for ts in candles["t"]]
+            else:
+                dates = [datetime.fromtimestamp(ts).strftime("%Y-%m-%d") for ts in candles["t"]]
 
             return {
                 "dates": dates,

@@ -158,6 +158,7 @@ export interface EarningsEstimate {
   peg_ratio: number | null;
   earnings_growth: number | null;
   revenue_growth: number | null;
+  revenue_ttm: number | null;
 }
 
 export interface QuarterlyEarning {
