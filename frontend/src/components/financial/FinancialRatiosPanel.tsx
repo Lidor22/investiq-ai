@@ -180,7 +180,8 @@ function MetricCard({
     if (format === 'currency') {
       displayValue = `$${value.toFixed(2)}`;
     } else if (format === 'percent') {
-      displayValue = `${(value * 100).toFixed(1)}%`;
+      // Finnhub returns percentages as whole numbers (e.g., 26.92 for 26.92%)
+      displayValue = `${value.toFixed(1)}%`;
       colorClass = value >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
     } else {
       displayValue = value.toFixed(2);
