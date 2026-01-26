@@ -9,9 +9,8 @@ import {
   ResponsiveContainer,
   Legend,
   ComposedChart,
-  Line,
 } from 'recharts';
-import { DollarSign, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown } from 'lucide-react';
 import { useEarnings } from '../../hooks/useFinancial';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 
