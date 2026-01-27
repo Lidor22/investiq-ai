@@ -146,17 +146,98 @@ investments-assistant/
 
 ## Deployment
 
-### Frontend (Vercel)
-1. Connect your GitHub repository to Vercel
-2. Set environment variables in Vercel dashboard
-3. Deploy
+### Architecture Overview
 
-### Backend (Render)
-1. Create a new Web Service on Render
-2. Connect your GitHub repository
-3. Set environment variables (FINNHUB_API_KEY, GROQ_API_KEY, etc.)
-4. Set build command: `pip install -r requirements.txt`
-5. Set start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+```
+┌─────────────────┐         ┌─────────────────┐
+│                 │         │                 │
+│  Vercel         │  HTTPS  │  Render         │
+│  (Frontend)     │◄───────►│  (Backend)      │
+│                 │         │                 │
+│  React + Vite   │         │  FastAPI        │
+│  Static Assets  │         │  SQLite DB      │
+│                 │         │                 │
+└─────────────────┘         └────────┬────────┘
+                                     │
+                    ┌────────────────┼────────────────┐
+                    │                │                │
+                    ▼                ▼                ▼
+             ┌──────────┐     ┌──────────┐     ┌──────────┐
+             │ Finnhub  │     │  Groq    │     │  Google  │
+             │   API    │     │   AI     │     │  OAuth   │
+             └──────────┘     └──────────┘     └──────────┘
+```
+
+### Frontend Deployment (Vercel)
+
+1. **Connect Repository**
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Click "Add New Project" → Import your GitHub repository
+   - Select the `frontend` folder as the root directory
+
+2. **Configure Build Settings**
+   - Framework Preset: `Vite`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+   - Install Command: `npm install`
+
+3. **Environment Variables**
+   | Variable | Value | Description |
+   |----------|-------|-------------|
+   | `VITE_API_URL` | `https://your-backend.onrender.com` | Backend API URL |
+
+4. **Deploy** - Vercel auto-deploys on every push to `main`
+
+### Backend Deployment (Render)
+
+1. **Create Web Service**
+   - Go to [Render Dashboard](https://dashboard.render.com/)
+   - Click "New" → "Web Service"
+   - Connect your GitHub repository
+
+2. **Configure Service**
+   - **Name**: `investiq-api` (or your choice)
+   - **Root Directory**: `backend`
+   - **Runtime**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+3. **Environment Variables**
+   | Variable | Description |
+   |----------|-------------|
+   | `FINNHUB_API_KEY` | Your Finnhub API key |
+   | `GROQ_API_KEY` | Your Groq API key |
+   | `GOOGLE_CLIENT_ID` | Google OAuth client ID |
+   | `GOOGLE_CLIENT_SECRET` | Google OAuth client secret |
+   | `JWT_SECRET` | Random string for JWT signing (use `openssl rand -hex 32`) |
+   | `FRONTEND_URL` | Your Vercel frontend URL (e.g., `https://investiq.vercel.app`) |
+   | `DATABASE_URL` | Optional - defaults to SQLite file |
+
+4. **Persistent Storage** (for SQLite)
+   - Add a Render Disk at `/opt/render/project/src/backend/data`
+   - Set `DATABASE_URL=sqlite+aiosqlite:///./data/investiq.db`
+
+### Google OAuth Configuration
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Navigate to "APIs & Services" → "Credentials"
+4. Create "OAuth 2.0 Client ID" (Web application)
+5. Add **Authorized JavaScript origins**:
+   - `https://your-app.vercel.app`
+   - `http://localhost:5173` (for local dev)
+6. Add **Authorized redirect URIs**:
+   - `https://your-backend.onrender.com/api/v1/auth/callback`
+   - `http://localhost:8000/api/v1/auth/callback` (for local dev)
+
+### Post-Deployment Checklist
+
+- [ ] Frontend can reach backend API (check browser console)
+- [ ] Google OAuth login works (redirect URIs configured correctly)
+- [ ] Stock data loads (Finnhub API key valid)
+- [ ] AI briefs generate (Groq API key valid)
+- [ ] Watchlist persists (database connected)
+- [ ] Dark mode works across all pages
 
 ## Contributing
 
